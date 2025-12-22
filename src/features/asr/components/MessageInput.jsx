@@ -41,6 +41,7 @@ export const LiveAudioVisualizer = ({ onRecordComplete, recordRef }) => {
         scrollingWaveform: true,
         continuousWaveform: false,
         renderRecordedAudio: false,
+        mediaRecorderTimeslice: 1000, // Fix for Safari empty blob issue
       })
     );
     recordPluginRef.current = record;
