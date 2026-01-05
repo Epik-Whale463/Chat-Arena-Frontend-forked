@@ -113,7 +113,8 @@ export function ChatSidebar({ isOpen, onToggle }) {
   const { tenant: contextTenant } = useTenant();
 
   // Use URL tenant or context tenant
-  const currentTenant = urlTenant || contextTenant;
+  let currentTenant = urlTenant || contextTenant;
+  if (currentTenant === 'leaderboard') currentTenant = null;
 
 
   const groupedSessions = useMemo(
@@ -143,9 +144,9 @@ export function ChatSidebar({ isOpen, onToggle }) {
 
   const handleLeaderboard = () => {
     if (currentTenant) {
-      navigate(`/${currentTenant}/leaderboard/overview`);
+      navigate(`/${currentTenant}/leaderboard/chat/overview`);
     } else {
-      navigate('/leaderboard/overview');
+      navigate('/leaderboard/chat/overview');
     }
     // Auto-close sidebar on small screens after navigation
     if (typeof window !== 'undefined' && window.innerWidth < 768 && onToggle) {
@@ -254,9 +255,9 @@ export function ChatSidebar({ isOpen, onToggle }) {
                   <button
                     onClick={() => {
                       if (currentTenant) {
-                        navigate(`/${currentTenant}/leaderboard/overview`);
+                        navigate(`/${currentTenant}/leaderboard/chat/overview`);
                       } else {
-                        navigate('/leaderboard/overview');
+                        navigate('/leaderboard/chat/overview');
                       }
                       setIsLeaderboardDropdownOpen(false);
                     }}
@@ -268,9 +269,9 @@ export function ChatSidebar({ isOpen, onToggle }) {
                   <button
                     onClick={() => {
                       if (currentTenant) {
-                        navigate(`/${currentTenant}/leaderboard/text`);
+                        navigate(`/${currentTenant}/leaderboard/chat/text`);
                       } else {
-                        navigate('/leaderboard/text');
+                        navigate('/leaderboard/chat/text');
                       }
                       setIsLeaderboardDropdownOpen(false);
                     }}

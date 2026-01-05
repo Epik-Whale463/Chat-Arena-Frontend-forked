@@ -42,6 +42,12 @@ export function LeaderboardContainer({
   }, []);
 
   useEffect(() => {
+    if (defaultOrganization) {
+      setSelectedOrg(defaultOrganization);
+    }
+  }, [defaultOrganization]);
+
+  useEffect(() => {
     let alive = true;
 
     async function fetchData() {
@@ -153,49 +159,12 @@ export function LeaderboardContainer({
           </div>
 
           <div className="flex flex-col lg:flex-row gap-3 mb-4">
-             {/* Organization Dropdown */}
-             {organizationOptions.length > 0 && (
+             {/* Organization Dropdown Removed */}
+             {/* {organizationOptions.length > 0 && (
                 <div className="relative w-full lg:w-auto" ref={orgDropdownRef}>
-                  <button
-                    onClick={() => setIsOrgDropdownOpen(!isOrgDropdownOpen)}
-                    className="w-full lg:w-48 px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-600 text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-orange-400 transition-colors flex items-center justify-between gap-3"
-                  >
-                    <div className="flex items-center gap-2">
-                      <span>{selectedOrgOption?.label || selectedOrg}</span>
-                    </div>
-                    <ChevronDown
-                      size={18}
-                      className={`text-gray-500 transition-transform duration-300 ${isOrgDropdownOpen ? 'rotate-180' : 'rotate-0'}`}
-                    />
-                  </button>
-
-                  {isOrgDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden animate-dropdown-open-down">
-                      <div className="py-1">
-                        {organizationOptions.map((option) => (
-                          <button
-                            key={option.value}
-                            onClick={() => {
-                                setSelectedOrg(option.value);
-                                setIsOrgDropdownOpen(false);
-                            }}
-                            className={`w-full px-4 py-2.5 text-left text-sm flex items-center gap-3 transition-colors ${
-                              selectedOrg === option.value
-                                ? 'bg-orange-50 text-gray-900'
-                                : 'text-gray-600 hover:bg-gray-100'
-                            }`}
-                          >
-                            <span className="flex-1">{option.label}</span>
-                            {selectedOrg === option.value && (
-                              <div className="w-5 h-5 text-orange-500">✓</div>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  // ... dropdown code removed ...
                 </div>
-             )}
+             )} */}
 
             {/* Language Dropdown */}
             {languageOptions.length > 0 && (

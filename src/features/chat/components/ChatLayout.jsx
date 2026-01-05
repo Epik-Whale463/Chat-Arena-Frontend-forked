@@ -8,9 +8,10 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { AuthPromptBanner } from '../../auth/components/AuthPromptBanner';
 import { fetchSessionById, setActiveSession, clearMessages, resetLanguageSettings } from '../store/chatSlice';
 import { PanelLeftOpen, Plus } from 'lucide-react';
-import { LeaderboardFilters } from './LeaderboardFilters';
+import { LeaderboardFilters } from '../../leaderboard/components/LeaderboardFilters';
 import { LeaderboardContent } from './LeaderboardContent';
 import { useTenant } from '../../../shared/context/TenantContext';
+import { Grid3x3, FileText } from 'lucide-react';
 
 
 export function ChatLayout() {
@@ -23,10 +24,16 @@ export function ChatLayout() {
   const { tenant: contextTenant } = useTenant();
 
   // Use URL tenant or context tenant
-  const currentTenant = urlTenant || contextTenant;
+  let currentTenant = urlTenant || contextTenant;
+  if (currentTenant === 'leaderboard') currentTenant = null;
 
   // Check if we're on a leaderboard route (with or without tenant prefix)
   const isLeaderboardRoute = location.pathname.includes('/leaderboard');
+
+  const filters = [
+      { name: 'Overview', suffix: 'overview', icon: Grid3x3 },
+      { name: 'Text', suffix: 'text', icon: FileText },
+  ];
 
   useEffect(() => {
     const applyResponsiveSidebar = () => {
@@ -87,7 +94,10 @@ export function ChatLayout() {
                   >
                     <PanelLeftOpen size={20} />
                   </button>
-                  <LeaderboardFilters />
+                  <LeaderboardFilters 
+                    basePath={currentTenant ? `/${currentTenant}/leaderboard/chat` : "/leaderboard/chat"}
+                    availableFilters={filters}
+                  />
                 </div>
               </div>
             ) : (
