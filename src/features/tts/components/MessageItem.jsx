@@ -205,11 +205,21 @@ export function MessageItem({
   );
 
   if (isUser) {
+    const isLoadingPrompt = !message.content || message.content.trim() === '';
+
     return (
       <div className="flex justify-end mb-4">
         <div className="group flex items-start gap-3 justify-end">
           <div className="bg-orange-500 text-white px-3 py-2 rounded-lg max-w-2xl">
-            <p className="whitespace-pre-wrap">{message.content}</p>
+            {isLoadingPrompt ? (
+              <div className="flex items-center gap-1 h-6">
+                <span className="inline-block w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="inline-block w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="inline-block w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+            ) : (
+              <p className="whitespace-pre-wrap">{message.content}</p>
+            )}
           </div>
         </div>
       </div>

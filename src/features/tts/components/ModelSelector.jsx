@@ -42,7 +42,7 @@ export function ModelSelector({ variant = 'full' }) {
         currentSelections.modelA = models[0].id;
         needsUpdate = true;
       }
-      
+
       if (mode === 'compare') {
         if (!currentSelections.modelB || currentSelections.modelB === currentSelections.modelA) {
           const defaultModelB = models.find(m => m.id !== currentSelections.modelA);
@@ -52,7 +52,7 @@ export function ModelSelector({ variant = 'full' }) {
           }
         }
       }
-      
+
       if (mode !== 'compare' && currentSelections.modelB) {
         currentSelections.modelB = null;
         needsUpdate = true;
@@ -96,7 +96,7 @@ export function ModelSelector({ variant = 'full' }) {
     }
   };
 
-  if (loading || (models.length > 0 && !modelsInUse.modelA && mode !== 'random')) {
+  if (loading || (models.length > 0 && !modelsInUse.modelA && mode !== 'random' && mode !== 'academic')) {
     return <div className="text-sm text-gray-500 animate-pulse">Initializing...</div>;
   }
 
@@ -109,7 +109,7 @@ export function ModelSelector({ variant = 'full' }) {
   }
 
   if (variant === 'models') {
-    if (mode === 'random') return null;
+    if (mode === 'random' || mode === 'academic') return null;
     return (
       <div className="flex items-center justify-center gap-1 sm:gap-2 flex-nowrap">
         <ModelDropdown
@@ -136,7 +136,7 @@ export function ModelSelector({ variant = 'full' }) {
   return (
     <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
       <ModeDropdown currentMode={mode} onModeChange={handleModeChange} />
-      {mode !== 'random' && (
+      {mode !== 'random' && mode !== 'academic' && (
         <>
           <span className="text-gray-300 font-light text-lg sm:text-2xl hidden sm:inline">/</span>
           <ModelDropdown

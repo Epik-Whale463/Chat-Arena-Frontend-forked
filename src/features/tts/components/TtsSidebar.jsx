@@ -18,6 +18,7 @@ import {
   Pin,
   Edit2,
   Ellipsis,
+  GraduationCap,
 } from 'lucide-react';
 import { AuthModal } from '../../auth/components/AuthModal';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -220,6 +221,10 @@ const SessionItem = ({ session, isActive, onClick, onPin, onRename }) => {
   const renderModeIcon = () => {
     if (session.mode === 'random') {
       return <Shuffle className="flex-shrink-0 rounded-full bg-white ring-2 ring-white" size={16} />;
+    }
+
+    if (session.mode === 'academic') {
+      return <GraduationCap className="flex-shrink-0 rounded-full bg-white ring-2 ring-white" size={16} />;
     }
 
     if (session.mode === 'direct') {
