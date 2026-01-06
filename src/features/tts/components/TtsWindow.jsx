@@ -73,7 +73,7 @@ export function TtsWindow({ isSidebarOpen = true }) {
         ) : (
           <>
             <div className="flex-1 overflow-y-auto">
-              {activeSession.mode === 'compare' || activeSession.mode === 'random' ? (
+              {activeSession.mode !== 'direct' ? (
                 <CompareView
                   session={activeSession}
                   messages={sessionMessages}

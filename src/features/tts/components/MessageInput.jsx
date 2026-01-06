@@ -111,7 +111,7 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
         if (selectedMode === 'direct') {
           await streamMessage({ sessionId: result.id, content, modelId: result.model_a?.id, parent_message_ids: [], language: isTranslateEnabled ? selectedLanguage : "en" });
         } else {
-          await streamMessageCompare({ sessionId: result.id, content, modelAId: result.model_a?.id, modelBId: result.model_b?.id, parentMessageIds: [], language: isTranslateEnabled ? selectedLanguage : "en" });
+          await streamMessageCompare({ sessionId: result.id, content, modelAId: result.model_a?.id, modelBId: result.model_b?.id, parentMessageIds: [], language: selectedMode === "academic" ? selectedLanguage : isTranslateEnabled ? selectedLanguage : "en" });
         }
       } catch (error) {
         toast.error('Failed to create session');
@@ -125,7 +125,17 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
       setIsStreaming(true);
 
       try {
-        if (activeSession?.mode === 'direct') {
+        if (activeSession?.mode === 'academic') {
+          // For academic mode with existing session, create a new session instead
+          const result = await dispatch(createSession({
+            mode: selectedMode,
+            modelA: selectedModels.modelA,
+            modelB: selectedModels.modelB,
+            type: 'TTS',
+          })).unwrap();
+          navigate(`/tts/${result.id}`, { replace: true });
+          await streamMessageCompare({ sessionId: result.id, content, modelAId: result.model_a?.id, modelBId: result.model_b?.id, parentMessageIds: [], language: selectedLanguage });
+        } else if (activeSession?.mode === 'direct') {
           const parentMessageIds = messages[activeSession.id].filter(msg => msg.role === 'assistant').slice(-1).map(msg => msg.id);
           await streamMessage({ sessionId, content, modelId: modelAId, parent_message_ids: parentMessageIds, language: isTranslateEnabled ? selectedLanguage : "en" });
         } else {
@@ -142,6 +152,21 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // For academic mode, allow submission without input (will use random prompt)
+    const currentMode = activeSession?.mode ?? selectedMode;
+    if (currentMode === 'academic') {
+      if (isStreaming || isCreatingSession) return;
+
+      if (!checkMessageLimit()) {
+        return;
+      }
+
+      performActualSubmit(''); // Content will be fetched from backend
+      return;
+    }
+
+    // For other modes, require input
     if (!input.trim() || isStreaming || isCreatingSession) return;
 
     if (!checkMessageLimit()) {
@@ -184,6 +209,58 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
   };
 
   const formMaxWidth = getFormMaxWidth();
+  const currentMode = activeSession?.mode ?? selectedMode;
+  const isAcademicMode = currentMode === 'academic';
+
+  // Academic mode: Show only language selector and enter button
+  if (isAcademicMode) {
+    return (
+      <>
+        <div className={`w-full px-2 sm:px-4 ${isCentered ? 'pb-0' : 'pb-2 sm:pb-4'} bg-transparent`}>
+          <form onSubmit={handleSubmit} className={`relative ${formMaxWidth}`}>
+            <div className={`relative flex items-center justify-between bg-white border-2 border-orange-500 rounded-xl shadow-sm w-full p-3`}>
+              <div className="flex items-center gap-3">
+                <span className="text-gray-700 text-sm font-medium">Language:</span>
+                <LanguageSelector
+                  value={selectedLanguage}
+                  onChange={(e) => dispatch(setSelectedLanguage(e.target.value))}
+                />
+              </div>
+              <button
+                type="submit"
+                aria-label={activeSession ? "Start new session" : "Start session"}
+                title={activeSession ? "Start new session" : "Start session"}
+                className={`px-4 py-2 flex items-center justify-center gap-2 rounded-lg transition-colors text-sm font-medium
+                  ${isLoading
+                    ? 'bg-gray-200 text-gray-500'
+                    : 'bg-orange-500 text-white hover:bg-orange-600'
+                  }`
+                }
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <LoaderCircle size={16} className="animate-spin" />
+                    <span>Loading...</span>
+                  </>
+                ) : (
+                  <span>{activeSession ? "New Session" : "Start Session"}</span>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <AuthModal isOpen={showAuthPrompt} onClose={() => setShowAuthPrompt(false)} session_type="LLM" />
+
+        <PrivacyConsentModal
+          isOpen={showConsentModal}
+          onAccept={handleAcceptConsent}
+          onDecline={handleDeclineConsent}
+        />
+      </>
+    );
+  }
 
   return (
     <>

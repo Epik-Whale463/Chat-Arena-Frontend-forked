@@ -263,6 +263,16 @@ const chatSlice = createSlice({
         }
       }
     },
+    updateMessageContent: (state, action) => {
+      const { sessionId, messageId, content } = action.payload;
+      const messages = state.messages[sessionId];
+      if (messages) {
+        const message = messages.find((m) => m.id === messageId);
+        if (message) {
+          message.content = content;
+        }
+      }
+    },
     removeMessage: (state, action) => {
       const { sessionId, messageId } = action.payload;
       if (state.messages[sessionId]) {
@@ -394,6 +404,7 @@ export const {
   resetLanguageSettings,
   setMessageInputHeight,
   updateMessageRating,
+  updateMessageContent,
   updateActiveSessionData,
   updateStreamingMessageTTS,
 } = chatSlice.actions;
