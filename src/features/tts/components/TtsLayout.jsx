@@ -31,6 +31,7 @@ export function TtsLayout() {
   const filters = [
     { name: 'Overview', suffix: 'overview', icon: Grid3x3 },
     { name: 'TTS', suffix: 'tts', icon: FileText },
+    { name: 'Top Contributors', suffix: 'contributors', icon: null },
   ];
 
   useEffect(() => {

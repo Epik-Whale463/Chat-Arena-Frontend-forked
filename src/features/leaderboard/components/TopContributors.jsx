@@ -1,40 +1,32 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { LeaderboardTable } from './LeaderboardTable';
 import { Search, ChevronDown } from 'lucide-react';
 import { API_BASE_URL } from '../../../shared/api/client';
+import { endpoints } from '../../../shared/api/endpoints';
 
-export function LeaderboardContainer({
-  title,
-  description,
-  fetchEndpoint,
-  type = 'default',
-  languageOptions = [],
-  organizationOptions = [],
+export function TopContributors({
+  type,
   defaultLanguage = 'english',
   defaultOrganization = 'ai4bharat',
-  columns = [],
-  dataMapper = null,
+  languageOptions = [],
+  organizationOptions = [],
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState(defaultLanguage);
   const [selectedOrg, setSelectedOrg] = useState(defaultOrganization);
   
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
-  const [isOrgDropdownOpen, setIsOrgDropdownOpen] = useState(false);
   
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   
   const languageDropdownRef = useRef(null);
-  const orgDropdownRef = useRef(null);
 
   useEffect(() => {
     function handleClickOutside(event) {
       if (languageDropdownRef.current && !languageDropdownRef.current.contains(event.target)) {
         setIsLanguageDropdownOpen(false);
-      }
-      if (orgDropdownRef.current && !orgDropdownRef.current.contains(event.target)) {
-        setIsOrgDropdownOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -53,15 +45,8 @@ export function LeaderboardContainer({
     async function fetchData() {
       setLoading(true);
       try {
-        const url = typeof fetchEndpoint === 'function' 
-            ? fetchEndpoint({ language: selectedLanguage, organization: selectedOrg }) 
-            : fetchEndpoint;
-        if (!url) {
-             setLoading(false);
-             return;
-        }
-
-        const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+        const url = `${endpoints.models.contributors}?arena_type=${type}&language=${selectedLanguage}&tenant=${selectedOrg}`;
+        const fullUrl = `${API_BASE_URL}${url}`;
         
         const res = await fetch(fullUrl, {
           headers: { accept: 'application/json' },
@@ -71,26 +56,24 @@ export function LeaderboardContainer({
         
         const jsonData = await res.json();
         
-        let mapped;
-        if (dataMapper) {
-             mapped = dataMapper(jsonData);
-        } else {
-            mapped = (Array.isArray(jsonData) ? jsonData : [])
-            .map(item => ({
-                ...item,
-                id: item.model || Math.random().toString(36).substr(2, 9),
-                display_name: item.model,
-                organization: item.organization || 'Unknown',
-                language: item.language || 'english',
-            }));
-        }
+        const mapped = (Array.isArray(jsonData) ? jsonData : []).map((item, index) => ({
+            id: item.email,
+            rank: index + 1,
+            user: item.display_name || item.email,
+            email: item.email,
+            chat_sessions: item.chat_sessions_count,
+            total_votes: item.total_votes,
+            votes_direct: item.votes_breakdown?.['Direct Chat'] || 0,
+            votes_compare: item.votes_breakdown?.['Comparison'] || 0,
+            votes_random: item.votes_breakdown?.['Random'] || 0,
+        }));
 
         if (alive) {
             setData(mapped);
             setLoading(false);
         }
       } catch (e) {
-        console.error('Failed to load leaderboard', e);
+        console.error('Failed to load contributors', e);
         if (alive) {
             setData([]);
             setLoading(false);
@@ -100,7 +83,7 @@ export function LeaderboardContainer({
 
     fetchData();
     return () => { alive = false; };
-  }, [fetchEndpoint, selectedLanguage, selectedOrg]);
+  }, [type, selectedLanguage, selectedOrg]);
 
   const filteredData = useMemo(() => {
     let filtered = data;
@@ -108,8 +91,8 @@ export function LeaderboardContainer({
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter(row =>
-        row.model?.toLowerCase().includes(q) ||
-        row.organization?.toLowerCase().includes(q)
+        row.user?.toLowerCase().includes(q) ||
+        row.email?.toLowerCase().includes(q)
       );
     }
     
@@ -117,7 +100,21 @@ export function LeaderboardContainer({
   }, [data, searchQuery]);
 
   const selectedLanguageOption = languageOptions.find(opt => opt.value === selectedLanguage);
-  const selectedOrgOption = organizationOptions.find(opt => opt.value === selectedOrg);
+
+  const columns = [
+    { key: 'rank', label: 'Rank', sortable: true, width: '10%' },
+    { key: 'user', label: 'User', sortable: true, render: (val, row) => (
+        <div>
+            <div className="font-medium text-gray-900">{val}</div>
+            <div className="text-xs text-gray-500">{row.email}</div>
+        </div>
+    )},
+    { key: 'chat_sessions', label: 'Chat Sessions', sortable: true, align: 'right' },
+    { key: 'total_votes', label: 'Total Votes', sortable: true, align: 'right' },
+    { key: 'votes_direct', label: 'Direct Votes', sortable: true, align: 'right' },
+    { key: 'votes_compare', label: 'Compare Votes', sortable: true, align: 'right' },
+    { key: 'votes_random', label: 'Random Votes', sortable: true, align: 'right' },
+  ];
 
   return (
     <div className="flex-1 overflow-y-auto min-h-[80vh] bg-gray-50">
@@ -127,46 +124,23 @@ export function LeaderboardContainer({
           <div className="flex flex-col lg:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div className="flex-1">
               <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-                {title}
+                Top Contributors
               </h1>
               <p className="text-gray-600 text-xs max-w-lg md:text-sm">
-                {description}
+                Recognizing our top contributors based on chat sessions and votes.
               </p>
             </div>
 
             <div className="flex flex-row md:flex-row gap-6 md:gap-8 text-sm md:text-base">
               <div className="text-center md:text-left">
-                <div className="text-gray-500 mb-1">Last Updated</div>
-                <div className="text-gray-900 text-sm font-mono text-center">-</div>
-              </div>
-              <div className="text-center md:text-left">
-                <div className="text-gray-500 mb-1">Total Votes</div>
-                <div className="text-gray-900 text-sm font-mono text-center">
-                    {data.reduce((sum, row) => sum + (Number(row.votes) || 0), 0)}
-                </div>
-              </div>
-              <div className="text-center md:text-left">
-                <div className="text-gray-500 mb-1">Total Models</div>
+                <div className="text-gray-500 mb-1">Total Contributors</div>
                 <div className="text-gray-900 text-sm font-mono">{filteredData.length}</div>
               </div>
             </div>
           </div>
 
-          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-yellow-800 text-sm font-medium">
-              We will update the leaderboard once a sufficient number of votes are received for each model.
-            </p>
-          </div>
-
           <div className="flex flex-col lg:flex-row gap-3 mb-4">
-             {/* Organization Dropdown Removed */}
-             {/* {organizationOptions.length > 0 && (
-                <div className="relative w-full lg:w-auto" ref={orgDropdownRef}>
-                  // ... dropdown code removed ...
-                </div>
-             )} */}
-
-            {/* Language Dropdown */}
+             {/* Language Dropdown */}
             {languageOptions.length > 0 && (
                 <div className="relative w-full lg:w-auto" ref={languageDropdownRef}>
                 <button
@@ -219,7 +193,7 @@ export function LeaderboardContainer({
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
               <input
                 type="text"
-                placeholder="Search by model name..."
+                placeholder="Search contributors..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-600 placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 hover:bg-gray-50 transition-colors"
@@ -242,7 +216,7 @@ export function LeaderboardContainer({
           columns={columns}
           compact={false}
           loading={loading}
-          emptyMessage={searchQuery ? "No models found matching your search" : "No models available"}
+          emptyMessage={searchQuery ? "No contributors found matching your search" : "No contributors found"}
         />
       </div>
     </div>

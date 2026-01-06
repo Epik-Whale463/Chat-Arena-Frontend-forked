@@ -32,6 +32,7 @@ export function AsrLayout() {
   const filters = [
     { name: 'Overview', suffix: 'overview', icon: Grid3x3 },
     { name: 'ASR', suffix: 'asr', icon: Mic },
+    { name: 'Top Contributors', suffix: 'contributors', icon: null },
   ];
 
   useEffect(() => {
