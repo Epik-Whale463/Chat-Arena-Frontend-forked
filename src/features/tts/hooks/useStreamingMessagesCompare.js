@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { apiClient } from '../../../shared/api/client';
 import { endpoints } from '../../../shared/api/endpoints';
-import { addMessage, updateStreamingMessageTTS, updateSessionTitle } from '../store/chatSlice';
+import { addMessage, updateStreamingMessageTTS, updateSessionTitle, updateMessageContent } from '../store/chatSlice';
 import { v4 as uuidv4 } from 'uuid';
 
 export function useStreamingMessageCompare() {
@@ -113,7 +113,20 @@ export function useStreamingMessageCompare() {
                 for (const line of lines) {
                     if (!line.trim()) continue;
 
-                    if (line.startsWith('a0:')) {
+                    // Handle prompt update for academic mode
+                    if (line.startsWith('prompt:')) {
+                        const promptContent = line.slice(8, -1)
+                            .replace(/\\n/g, '\n')
+                            .replace(/\\"/g, '"')
+                            .replace(/\\\\/g, '\\');
+                        dispatch(updateMessageContent({
+                            sessionId,
+                            messageId: userMessageId,
+                            content: promptContent
+                        }));
+                    }
+
+                    else if (line.startsWith('a0:')) {
                         const content = line.slice(4, -1);
                         dispatch(updateStreamingMessageTTS({
                             sessionId,

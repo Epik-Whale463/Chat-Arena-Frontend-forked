@@ -43,6 +43,10 @@ export default {
           'sound-wave': {
             '0%, 100%': { height: '20%' },
             '50%': { height: '100%' },
+          },
+          'blink': {
+            '0%, 100%': { opacity: 1 },
+            '50%': { opacity: 0 },
           }
         },
         animation: {
@@ -50,6 +54,7 @@ export default {
           'pulse-shadow': 'pulse-shadow 2s infinite',
           'border-glow': 'border-glow 2.5s ease-in-out infinite',
           'sound-wave': 'sound-wave 1s ease-in-out infinite',
+          'blink': 'blink 1s ease-in-out infinite',
         },
       },
     },

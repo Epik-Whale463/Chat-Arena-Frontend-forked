@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, LoaderCircle, Info, Image, Mic, Languages, X, AudioLines, FileText } from 'lucide-react';
+import { Send, LoaderCircle, Info, Image, Mic, Languages, X, AudioLines, FileText, Plus } from 'lucide-react';
 import { useStreamingMessage } from '../hooks/useStreamingMessage';
 import { useStreamingMessageCompare } from '../hooks/useStreamingMessagesCompare';
 import { toast } from 'react-hot-toast';
@@ -62,6 +62,23 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
   const [documentName, setDocumentName] = useState(null);
   const [isUploadingDoc, setIsUploadingDoc] = useState(false);
   const [uploadedDocument, setUploadedDocument] = useState({ url: null, path: null });
+
+  // Unified Upload Menu State
+  const [isUploadMenuOpen, setIsUploadMenuOpen] = useState(false);
+  const uploadMenuRef = useRef(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (uploadMenuRef.current && !uploadMenuRef.current.contains(event.target)) {
+        setIsUploadMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [uploadMenuRef]);
 
 
   // Notify parent about input activity (only if input has content)
@@ -316,6 +333,11 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
           modelB: selectedModels.modelB,
           type: 'LLM',
           tenant: currentTenant,
+          metadata: {
+            has_image: !!imagePath,
+            has_audio: !!audioPath,
+            has_document: !!docPath
+          }
         })).unwrap();
 
         // Navigate with tenant prefix if available
@@ -593,69 +615,83 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
                     <Mic size={18} className="sm:w-5 sm:h-5" />
                   )}
                 </button>
-                <input
-                  type="file"
-                  ref={imageInputRef}
-                  onChange={handleImageSelect}
-                  accept="image/*"
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => imageInputRef.current?.click()}
-                  disabled={isUploadingImage}
-                  className={`p-1.5 sm:p-2 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50 ${selectedImage ? 'text-orange-500' : 'text-gray-500 hover:text-orange-600'}`}
-                  aria-label="Attach file"
-                  title="Attach Images"
-                >
-                  {isUploadingImage ? (
-                    <LoaderCircle size={18} className="animate-spin sm:w-5 sm:h-5" />
-                  ) : (
-                    <Image size={18} className="sm:w-5 sm:h-5" />
+                {/* Unified Upload Button */}
+                <div className="relative" ref={uploadMenuRef}>
+                  <input
+                    type="file"
+                    ref={imageInputRef}
+                    onChange={handleImageSelect}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <input
+                    type="file"
+                    ref={audioInputRef}
+                    onChange={handleAudioSelect}
+                    accept="audio/*"
+                    className="hidden"
+                  />
+                  <input
+                    type="file"
+                    ref={docInputRef}
+                    onChange={handleDocumentSelect}
+                    accept=".pdf,.doc,.docx,.txt,.md,.rtf,.xls,.xlsx,.csv"
+                    className="hidden"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setIsUploadMenuOpen(!isUploadMenuOpen)}
+                    className={`p-1.5 sm:p-2 rounded-full transition-colors ${isUploadMenuOpen ? 'bg-gray-200 text-gray-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                    aria-label="Add attachments"
+                    title="Add attachments"
+                  >
+                    <Plus size={20} className="sm:w-5 sm:h-5" />
+                  </button>
+
+                  {/* Upload Menu */}
+                  {isUploadMenuOpen && (
+                    <div className="absolute bottom-full right-0 mb-3 w-56 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
+                      <div className="p-1.5">
+                        <button
+                          type="button"
+                          onClick={() => { imageInputRef.current?.click(); setIsUploadMenuOpen(false); }}
+                          disabled={isUploadingImage}
+                          className="flex items-center gap-3 w-full px-3 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100 text-green-600">
+                            {isUploadingImage ? <LoaderCircle size={16} className="animate-spin" /> : <Image size={16} />}
+                          </div>
+                          <span className="font-medium">Upload Image</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => { docInputRef.current?.click(); setIsUploadMenuOpen(false); }}
+                          disabled={isUploadingDoc}
+                          className="flex items-center gap-3 w-full px-3 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600">
+                            {isUploadingDoc ? <LoaderCircle size={16} className="animate-spin" /> : <FileText size={16} />}
+                          </div>
+                          <span className="font-medium">Upload Document</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => { audioInputRef.current?.click(); setIsUploadMenuOpen(false); }}
+                          disabled={isUploadingAudio}
+                          className="flex items-center gap-3 w-full px-3 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-600">
+                            {isUploadingAudio ? <LoaderCircle size={16} className="animate-spin" /> : <AudioLines size={16} />}
+                          </div>
+                          <span className="font-medium">Upload Audio</span>
+                        </button>
+                      </div>
+                    </div>
                   )}
-                </button>
-                <input
-                  type="file"
-                  ref={audioInputRef}
-                  onChange={handleAudioSelect}
-                  accept="audio/*"
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => audioInputRef.current?.click()}
-                  disabled={isUploadingAudio}
-                  className={`p-1.5 sm:p-2 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50 ${selectedAudio ? 'text-orange-500' : 'text-gray-500 hover:text-orange-600'}`}
-                  aria-label="Attach audio"
-                  title="Attach Audio"
-                >
-                  {isUploadingAudio ? (
-                    <LoaderCircle size={18} className="animate-spin sm:w-5 sm:h-5" />
-                  ) : (
-                    <AudioLines size={18} className="sm:w-5 sm:h-5" />
-                  )}
-                </button>
-                <input
-                  type="file"
-                  ref={docInputRef}
-                  onChange={handleDocumentSelect}
-                  accept=".pdf,.doc,.docx,.txt,.md,.rtf,.xls,.xlsx,.csv"
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => docInputRef.current?.click()}
-                  disabled={isUploadingDoc}
-                  className={`p-1.5 sm:p-2 rounded-md hover:bg-gray-100 transition-colors disabled:opacity-50 ${selectedDocument ? 'text-blue-500' : 'text-gray-500 hover:text-blue-600'}`}
-                  aria-label="Attach document"
-                  title="Attach Document"
-                >
-                  {isUploadingDoc ? (
-                    <LoaderCircle size={18} className="animate-spin sm:w-5 sm:h-5" />
-                  ) : (
-                    <FileText size={18} className="sm:w-5 sm:h-5" />
-                  )}
-                </button>
+                </div>
                 <button
                   type="submit"
                   aria-label="Send message"
