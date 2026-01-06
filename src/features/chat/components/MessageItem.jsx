@@ -1,4 +1,4 @@
-import { User, Bot, Copy, RefreshCw, Expand, Check, AlertTriangle, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { User, Bot, Copy, RefreshCw, Expand, Check, AlertTriangle, ThumbsUp, ThumbsDown, FileText } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
@@ -198,6 +198,25 @@ export function MessageItem({
       <div className="flex justify-end mb-4">
         <div className="group flex items-start gap-3 justify-end">
           <div className="bg-orange-500 text-white px-3 py-2 rounded-lg max-w-2xl">
+            {/* Display uploaded image if present */}
+            {(message.temp_image_url || message.image_path) && (
+              <div className="mb-2">
+                <img
+                  src={message.temp_image_url || message.image_path}
+                  alt="Uploaded"
+                  className="max-w-full h-auto rounded max-h-40 object-contain"
+                />
+              </div>
+            )}
+            {/* Display uploaded document if present */}
+            {(message.temp_doc_url || message.doc_path) && (
+              <div className="mb-2 p-2 bg-white/20 rounded-md flex items-center gap-2">
+                <FileText size={20} className="text-white" />
+                <span className="text-sm text-white font-medium truncate max-w-[200px]">
+                  Attached Document
+                </span>
+              </div>
+            )}
             <p className="whitespace-pre-wrap">{message.content}</p>
           </div>
         </div>
@@ -311,7 +330,7 @@ export function MessageItem({
         <div className="prose prose-sm max-w-none text-gray-900">
           {message.isStreaming &&
             (!message.content || message.content.trim().length === 0) &&
-            !isThinkingModelRef.current && ((modelName !== "GPT 5" && modelName !== "GPT 5 Pro" && modelName !== "Gemini 2.5 Pro" && modelName !== "Gemini 3 Pro")?
+            !isThinkingModelRef.current && ((modelName !== "GPT 5" && modelName !== "GPT 5 Pro" && modelName !== "Gemini 2.5 Pro" && modelName !== "Gemini 3 Pro") ?
               <span className="inline-block w-2 h-4 bg-gray-400 animate-pulse ml-1 rounded-sm" /> :
               <span className="text-xs text-gray-600 font-normal italic animate-pulse">
                 Thinking...
