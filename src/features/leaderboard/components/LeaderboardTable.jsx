@@ -8,7 +8,9 @@ export function LeaderboardTable({
   onRowClick,
   rowKey = 'id',
   compact = false,
-  viewAllLink = null
+  viewAllLink = null,
+  loading = false,
+  emptyMessage = null
 }) {
   const navigate = useNavigate();
   const [sortConfig, setSortConfig] = useState({
@@ -76,30 +78,37 @@ export function LeaderboardTable({
             </tr>
           </thead>
           <tbody>
-            {sortedData.map((row, i) => (
-              <tr
-                key={row[rowKey] || i}
-                onClick={() => onRowClick && onRowClick(row)}
-                className={`border-b border-gray-100 hover:bg-gray-50 transition-colors bg-white ${
-                  i % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                } ${onRowClick ? 'cursor-pointer' : ''}`}
-              >
-                 {columns.map((col) => (
-                    <td 
-                      key={`${row[rowKey] || i}-${col.key}`} 
-                      className={`px-4 py-3 text-gray-900 text-sm ${col.align === 'right' ? 'text-right' : 'text-left'} ${col.cellClassName || ''}`}
-                    >
-                      {col.render ? col.render(row[col.key], row) : row[col.key]}
-                    </td>
-                 ))}
-              </tr>
-            ))}
-             {sortedData.length === 0 && (
+            {loading ? (
                  <tr>
                      <td colSpan={columns.length} className="px-4 py-8 text-center text-gray-500">
-                         No data available
+                         Loading...
                      </td>
                  </tr>
+             ) : sortedData.length === 0 ? (
+                 <tr>
+                     <td colSpan={columns.length} className="px-4 py-8 text-center text-gray-500">
+                         {emptyMessage || "No data available"}
+                     </td>
+                 </tr>
+             ) : (
+                sortedData.map((row, i) => (
+                  <tr
+                    key={row[rowKey] || i}
+                    onClick={() => onRowClick && onRowClick(row)}
+                    className={`border-b border-gray-100 hover:bg-gray-50 transition-colors bg-white ${
+                      i % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                    } ${onRowClick ? 'cursor-pointer' : ''}`}
+                  >
+                     {columns.map((col) => (
+                        <td 
+                          key={`${row[rowKey] || i}-${col.key}`} 
+                          className={`px-4 py-3 text-gray-900 text-sm ${col.align === 'right' ? 'text-right' : 'text-left'} ${col.cellClassName || ''}`}
+                        >
+                          {col.render ? col.render(row[col.key], row) : row[col.key]}
+                        </td>
+                     ))}
+                  </tr>
+                ))
              )}
           </tbody>
         </table>

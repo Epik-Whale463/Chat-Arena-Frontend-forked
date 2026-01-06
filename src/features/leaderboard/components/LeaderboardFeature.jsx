@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { LeaderboardContainer } from './LeaderboardContainer';
 import { LeaderboardOverview } from './LeaderboardOverview';
+import { TopContributors } from './TopContributors';
 import { leaderboardConfig } from '../config/leaderboardConfig';
 import { useTenant } from '../../../shared/context/TenantContext';
 
@@ -22,6 +24,18 @@ export function LeaderboardFeature({ type }) {
     if (!category || category === 'overview') {
        const sections = config.getOverviewSections(tenant);
        return <LeaderboardOverview sections={sections} />;
+    }
+
+    if (category === 'contributors') {
+       return (
+        <TopContributors
+          type={type}
+          defaultLanguage={config.defaultLanguage}
+          defaultOrganization={tenant || config.defaultOrganization}
+          languageOptions={config.languages}
+          organizationOptions={config.organizations}
+        />
+       );
     }
 
     // Otherwise show the specific leaderboard
@@ -62,3 +76,4 @@ export function LeaderboardFeature({ type }) {
     </div>
   );
 }
+

@@ -19,6 +19,7 @@ export const endpoints = {
       test: (id) => `/models/${id}/test/`,
       compare: '/models/compare/',
       leaderboard: (arena_type, org = 'ai4bharat') => `/leaderboard/${arena_type}/?org=${org}`,
+      contributors: '/leaderboard/contributors/',
     },
     
     // Session endpoints
