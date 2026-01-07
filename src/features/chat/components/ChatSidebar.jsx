@@ -1,10 +1,12 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchSessions,
   setActiveSession,
   clearMessages,
   resetLanguageSettings,
+  togglePinSession,
+  renameSession,
 } from "../store/chatSlice";
 import { logout } from "../../auth/store/authSlice";
 import {
@@ -20,6 +22,13 @@ import {
   Grid2x2,
   ScrollText,
   Shuffle,
+  Pin,
+  Edit2,
+  Ellipsis,
+  Download,
+  ChevronRight,
+  FileSpreadsheet,
+  FileJson,
 } from 'lucide-react';
 import { AuthModal } from '../../auth/components/AuthModal';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -27,9 +36,312 @@ import { groupSessionsByDate } from '../utils/dateUtils';
 import { SidebarItem } from './SidebarItem';
 import { ProviderIcons } from '../../../shared/icons';
 import { useTenant } from '../../../shared/context/TenantContext';
+import { RenameSessionModal } from "../../chat/components/RenameSessionModal";
+import { DropdownPortal } from "../../../shared/components/DropdownPortal";
+import { apiClient } from '../../../shared/api/client';
 
 
-const SessionItem = ({ session, isActive, onClick }) => {
+const SessionItem = ({ session, isActive, onClick, onPin, onRename }) => {
+  const [showMenu, setShowMenu] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(session.title || "");
+  const [showExportMenu, setShowExportMenu] = useState(false);
+
+  const menuRef = useRef(null);
+  const buttonRef = useRef(null);
+  const inputRef = useRef(null);
+  const itemRef = useRef(null);
+  const longPressTimerRef = useRef(null);
+  const isLongPressRef = useRef(false);
+
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    setRenameValue(session.title || "");
+  }, [session.title]);
+
+  useEffect(() => {
+    if (isRenaming && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isRenaming]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target)
+      ) {
+        setShowMenu(false);
+        setShowExportMenu(false);
+      }
+    };
+
+    const handleScroll = () => {
+      if (showMenu) {
+        setShowMenu(false);
+        setShowExportMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("scroll", handleScroll, true);
+    document.addEventListener("touchstart", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", handleScroll, true);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [showMenu]);
+
+
+  const calculateMenuPosition = (rect, isMobile) => {
+    const MENU_WIDTH = 192;
+    const MENU_HEIGHT = 100;
+    const SCREEN_WIDTH = window.innerWidth;
+    const SCREEN_HEIGHT = window.innerHeight;
+
+    let left, top;
+
+    if (isMobile) {
+      left = rect.left + (rect.width / 2) - (MENU_WIDTH / 2);
+      top = rect.bottom + 5;
+    } else {
+      left = rect.right + 5;
+      top = rect.top;
+    }
+
+    if (left + MENU_WIDTH > SCREEN_WIDTH) {
+      left = SCREEN_WIDTH - MENU_WIDTH - 10;
+    }
+    if (left < 10) {
+      left = 10;
+    }
+
+    if (top + MENU_HEIGHT > SCREEN_HEIGHT) {
+      top = rect.top - MENU_HEIGHT;
+      if (top < 10) top = 10;
+    }
+
+    return { top, left };
+  };
+
+  const handleMenuOpen = (rect) => {
+    const isMobile = window.innerWidth < 768;
+    const position = calculateMenuPosition(rect, isMobile);
+    setMenuPosition(position);
+    setShowMenu(true);
+  };
+
+  const handleMenuClick = (e) => {
+    e.stopPropagation();
+    if (!showMenu) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      handleMenuOpen(rect);
+    } else {
+      setShowMenu(false);
+      setShowExportMenu(false);
+    }
+  };
+
+  const handleTouchStart = (e) => {
+    if (window.innerWidth >= 768) return;
+    isLongPressRef.current = false;
+    longPressTimerRef.current = setTimeout(() => {
+      isLongPressRef.current = true;
+      if (itemRef.current) {
+        const rect = itemRef.current.getBoundingClientRect();
+        handleMenuOpen(rect);
+        if (navigator.vibrate) navigator.vibrate(50);
+      }
+    }, 500);
+  };
+
+  const handleTouchEnd = (e) => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+    }
+  };
+
+  const handleTouchMove = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+    }
+  };
+
+  const handleItemClick = (e) => {
+    if (isRenaming) return;
+
+    if (isLongPressRef.current) {
+      isLongPressRef.current = false;
+      return;
+    }
+
+    onClick();
+  };
+
+  const handleStartRename = (e) => {
+    e.stopPropagation();
+    setShowMenu(false);
+
+    if (window.innerWidth < 768) {
+      onRename(session);
+    } else {
+      setIsRenaming(true);
+    }
+  };
+
+  const saveRename = async () => {
+    if (!renameValue.trim() || renameValue === session.title) {
+      setIsRenaming(false);
+      setRenameValue(session.title || "");
+      return;
+    }
+
+    try {
+      await dispatch(renameSession({ sessionId: session.id, title: renameValue }));
+      setIsRenaming(false);
+    } catch (error) {
+      console.error("Failed to rename", error);
+      setRenameValue(session.title || "");
+      setIsRenaming(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.stopPropagation();
+      saveRename();
+    } else if (e.key === 'Escape') {
+      e.stopPropagation();
+      setIsRenaming(false);
+      setRenameValue(session.title || "");
+    }
+  };
+
+  const handleInputClick = (e) => {
+    e.stopPropagation();
+  };
+
+  const handleJsonExport = async (e) => {
+    e.stopPropagation();
+
+    try {
+      const response = await apiClient.get(`/sessions/${session.id}/`);
+      const data = response.data || response;
+
+      if (!data) throw new Error("No data received");
+
+      const jsonString = JSON.stringify(data, null, 2);
+      const blob = new Blob([jsonString], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `chat_export_${(session.title || 'chat').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.json`;
+
+      document.body.appendChild(link);
+      link.click();
+
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      setShowMenu(false);
+      setShowExportMenu(false);
+
+    } catch (error) {
+      console.error("Error exporting JSON:", error);
+      alert("Failed to export chat as JSON. Please try again.");
+    }
+  };
+
+  const handleCsvExport = async (e) => {
+    e.stopPropagation();
+    try {
+      const response = await apiClient.get(`/sessions/${session.id}/`);
+      const data = response.data || response;
+
+      if (!data || !data.messages) throw new Error("No messages found");
+
+      const headers = ["Role", "Content", "Timestamp", "Model"];
+
+      const escapeCsvField = (field) => {
+        if (field === null || field === undefined) return "";
+        const stringField = String(field);
+        if (stringField.search(/("|,|\n)/g) >= 0) {
+          return `"${stringField.replace(/"/g, '""')}"`;
+        }
+        return stringField;
+      };
+
+      const mode = data.session?.mode || "direct";
+      const modelA = data.session?.model_a;
+      const modelB = data.session?.model_b;
+
+      let sessionModelText = "Unknown Model";
+      if (mode === "direct") {
+        sessionModelText = modelA?.display_name || "Unknown Model";
+      } else {
+        const nameA = modelA?.display_name || "Model A";
+        const nameB = modelB?.display_name || "Model B";
+        sessionModelText = `${nameA} vs ${nameB}`;
+      }
+
+      const csvRows = [
+        headers.join(","),
+        ...data.messages.map((msg) => {
+          const isUser = msg.role === 'user';
+          let senderName = "Unknown";
+
+          if (isUser) {
+            senderName = "User";
+          } else {
+            if (mode === 'direct') {
+              senderName = modelA?.display_name || "AI Model";
+            } else {
+              if (msg.participant === 'a' || msg.participant === 'model_a') {
+                senderName = modelA?.display_name || "Model A";
+              } else if (msg.participant === 'b' || msg.participant === 'model_b') {
+                senderName = modelB?.display_name || "Model B";
+              } else {
+                senderName = "AI Model";
+              }
+            }
+          }
+
+          return [
+            escapeCsvField(senderName),
+            escapeCsvField(msg.content),
+            escapeCsvField(new Date(msg.created_at).toLocaleString()),
+            escapeCsvField(sessionModelText)
+          ].join(",");
+        }),
+      ].join("\n");
+
+      const blob = new Blob([csvRows], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `chat_export_${(session.title || 'chat').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`;
+
+      document.body.appendChild(link);
+      link.click();
+
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      setShowMenu(false);
+      setShowExportMenu(false);
+
+    } catch (error) {
+      console.error("Error exporting CSV:", error);
+      alert("Failed to export chat as CSV.");
+    }
+  };
+
   // Helper to get the icon for a provider
   const getProviderIcon = (provider) => {
     if (!provider) return null;
@@ -84,21 +396,154 @@ const SessionItem = ({ session, isActive, onClick }) => {
   };
 
   return (
-    <button
-      onClick={onClick}
-      className={`w-full text-left p-2 sm:p-2.5 rounded-lg mb-1 transition-colors flex items-center gap-2 sm:gap-3 text-xs sm:text-sm font-medium truncate ${isActive
-        ? 'bg-orange-100 text-orange-800'
-        : 'text-gray-700 hover:bg-gray-100'
-        }`}
+    <div
+      ref={itemRef}
+      className={`
+      group relative flex items-center mb-1 rounded-lg transition-colors select-none
+      ${isActive ? "bg-orange-100 text-orange-800" : "text-gray-700 hover:bg-gray-100"}
+    `}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchMove}
+      onContextMenu={(e) => {
+        if (window.innerWidth < 768) {
+          // e.preventDefault(); // Optional: depend on preference
+        }
+      }}
     >
-      <div className="flex-shrink-0 flex items-center justify-center" style={{ width: '28px' }}>
-        {renderModeIcon()}
+      <div
+        onClick={handleItemClick}
+        className={`
+          relative w-full text-left p-2 sm:p-2.5 rounded-lg transition-all duration-200
+          flex items-center gap-2 sm:gap-3 text-xs sm:text-sm font-medium
+          cursor-pointer
+          ${isActive ? 'text-orange-800' : 'text-gray-700'}
+        `}
+      >
+        <div className="flex-shrink-0 flex items-center justify-center" style={{ width: '28px' }}>
+          {renderModeIcon()}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          {isRenaming ? (
+            <input
+              ref={inputRef}
+              type="text"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onBlur={saveRename}
+              onClick={handleInputClick}
+              className="w-full bg-white border border-orange-300 rounded px-1 py-0.5 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-orange-500 text-gray-800 shadow-sm"
+              autoFocus
+            />
+          ) : (
+            <div className={`truncate ${showMenu ? 'md:pr-4' : 'md:group-hover:pr-4'} transition-all duration-0`}>
+              {session.title || 'New Conversation'}
+            </div>
+          )}
+        </div>
       </div>
 
-      <span className="flex-1 truncate min-w-0">
-        {session.title || 'New Conversation'}
-      </span>
-    </button>
+      {!isRenaming && (
+        <button
+          ref={buttonRef}
+          onClick={handleMenuClick}
+          className={`
+            hidden md:block 
+            absolute right-1 top-1/2 -translate-y-1/2 z-10
+            p-1 rounded-md hover:bg-gray-200/50 transition-all duration-200
+            ${showMenu ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} 
+            ${isActive ? 'text-orange-800' : 'text-gray-500'}
+          `}
+        >
+          <Ellipsis size={16} />
+        </button>
+      )}
+
+      {showMenu && (
+        <DropdownPortal>
+          <div
+            ref={menuRef}
+            style={{
+              position: 'fixed',
+              top: menuPosition.top,
+              left: menuPosition.left,
+            }}
+            className="z-[9999] w-48 bg-white rounded-lg shadow-xl border border-gray-100 py-1 text-gray-700 animate-in fade-in zoom-in-95 duration-100 origin-top-left"
+          >
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onPin(session);
+                setShowMenu(false);
+              }}
+              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"
+            >
+              <Pin
+                size={14}
+                className={session.is_pinned ? "fill-gray-700" : ""}
+              />
+              {session.is_pinned ? "Unpin" : "Pin"}
+            </button>
+
+            <button
+              onClick={handleStartRename}
+              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 md:flex items-center gap-2 hidden"
+            >
+              <Edit2 size={14} /> Rename
+            </button>
+            <button
+              onClick={handleStartRename}
+              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex md:hidden items-center gap-2"
+            >
+              <Edit2 size={14} /> Rename
+            </button>
+
+            <div className="relative group/export w-full">
+              <button
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center justify-between gap-2 text-gray-700"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowExportMenu(!showExportMenu);
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <Download size={14} />
+                  <span>Export</span>
+                </div>
+                <ChevronRight size={12} className={`text-gray-400 transition-transform ${showExportMenu && window.innerWidth < 768 ? 'rotate-90' : ''}`} />
+              </button>
+
+              <div className={`
+                  ${window.innerWidth < 768 ? 'relative w-full bg-gray-50/50 border-t border-gray-100' : 'absolute left-full top-0 ml-1 w-40 bg-white shadow-xl border border-gray-100 rounded-lg'}
+                  z-[10000] py-1
+                  ${showExportMenu ? 'block' : 'hidden md:group-hover/export:block'}
+              `}>
+                {/* CSV */}
+                <button
+                  onClick={handleCsvExport}
+                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+                >
+                  <FileSpreadsheet size={14} className="text-green-600" />
+                  <span>CSV</span>
+                </button>
+
+                {/* JSON */}
+                <button
+                  onClick={handleJsonExport}
+                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+                >
+                  <FileJson size={14} className="text-yellow-600" />
+                  <span>JSON</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </DropdownPortal>
+      )}
+    </div>
   );
 };
 
@@ -112,6 +557,9 @@ export function ChatSidebar({ isOpen, onToggle }) {
   const [isLeaderboardDropdownOpen, setIsLeaderboardDropdownOpen] = useState(false);
   const { tenant: contextTenant } = useTenant();
 
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [sessionToRename, setSessionToRename] = useState(null);
+
   // Use URL tenant or context tenant
   let currentTenant = urlTenant || contextTenant;
   if (currentTenant === 'leaderboard') currentTenant = null;
@@ -121,6 +569,18 @@ export function ChatSidebar({ isOpen, onToggle }) {
     () => groupSessionsByDate(sessions),
     [sessions]
   );
+
+  const { pinnedSessions, groupedHistory } = useMemo(() => {
+    if (!sessions) return { pinnedSessions: [], groupedHistory: [] };
+
+    const pinned = sessions.filter((s) => s.is_pinned);
+    const unpinned = sessions.filter((s) => !s.is_pinned);
+
+    return {
+      pinnedSessions: pinned,
+      groupedHistory: groupSessionsByDate(unpinned),
+    };
+  }, [sessions]);
 
   useEffect(() => {
     dispatch(fetchSessions());
@@ -165,6 +625,29 @@ export function ChatSidebar({ isOpen, onToggle }) {
     // Auto-close sidebar on small screens after selecting a session
     if (typeof window !== 'undefined' && window.innerWidth < 768 && onToggle) {
       onToggle();
+    }
+  };
+
+  const handlePinSession = (session) => {
+    dispatch(
+      togglePinSession({
+        sessionId: session.id,
+        isPinned: !session.is_pinned,
+      })
+    );
+  };
+
+  const handleRenameSession = (session) => {
+    setSessionToRename(session);
+    setRenameModalOpen(true);
+  };
+
+  const onRename = async (newTitle) => {
+    if (sessionToRename) {
+      await dispatch(
+        renameSession({ sessionId: sessionToRename.id, title: newTitle })
+      );
+      setSessionToRename(null);
     }
   };
 
@@ -282,12 +765,12 @@ export function ChatSidebar({ isOpen, onToggle }) {
                   </button>
                   <button
                     onClick={() => {
-                        if (currentTenant) {
-                            navigate(`/${currentTenant}/leaderboard/chat/contributors`);
-                        } else {
-                            navigate('/leaderboard/chat/contributors');
-                        }
-                        setIsLeaderboardDropdownOpen(false);
+                      if (currentTenant) {
+                        navigate(`/${currentTenant}/leaderboard/chat/contributors`);
+                      } else {
+                        navigate('/leaderboard/chat/contributors');
+                      }
+                      setIsLeaderboardDropdownOpen(false);
                     }}
                     className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-100 rounded transition text-left w-full"
                   >
@@ -360,10 +843,26 @@ export function ChatSidebar({ isOpen, onToggle }) {
           className={`flex-1 overflow-y-auto min-h-0 transition-opacity duration-200 ${isOpen ? "opacity-100 p-2" : "opacity-0"} ${isOpen ? "" : "pointer-events-none md:pointer-events-auto"}`}
         >
           {isOpen && (
-            groupedSessions.length === 0 ? (
-              <></>
-            ) : (
-              groupedSessions.map((group) => (
+            <>
+              {pinnedSessions.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase px-2.5 mb-2 flex items-center gap-2">
+                    <Pin size={12} /> Pinned
+                  </h3>
+                  {pinnedSessions.map((session) => (
+                    <SessionItem
+                      key={session.id}
+                      session={session}
+                      isActive={sessionId === session.id}
+                      onClick={() => handleSelectSession(session)}
+                      onPin={handlePinSession}
+                      onRename={handleRenameSession}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {groupedHistory.map((group) => (
                 <div key={group.title} className="mb-4">
                   <h3 className="text-xs font-semibold text-gray-400 uppercase px-2.5 mb-2">
                     {group.title}
@@ -374,11 +873,13 @@ export function ChatSidebar({ isOpen, onToggle }) {
                       session={session}
                       isActive={sessionId === session.id}
                       onClick={() => handleSelectSession(session)}
+                      onPin={handlePinSession}
+                      onRename={handleRenameSession}
                     />
                   ))}
                 </div>
-              ))
-            )
+              ))}
+            </>
           )}
         </div>
 
@@ -429,6 +930,12 @@ export function ChatSidebar({ isOpen, onToggle }) {
         </div>
       </div>
       <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} session_type="LLM" />
+      <RenameSessionModal
+        isOpen={renameModalOpen}
+        onClose={() => setRenameModalOpen(false)}
+        onRename={onRename}
+        currentTitle={sessionToRename?.title}
+      />
     </>
   );
 }
