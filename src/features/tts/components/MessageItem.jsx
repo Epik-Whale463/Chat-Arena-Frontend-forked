@@ -8,6 +8,7 @@ import { endpoints } from '../../../shared/api/endpoints';
 import { useDispatch } from 'react-redux';
 import { updateMessageRating } from '../store/chatSlice';
 import { AudioMessageBubble } from './AudioMessageBubble';
+import TtsDetailedFeedback from './TtsDetailedFeedback';
 
 function InlineErrorIndicator({ error, onRegenerate, canRegenerate }) {
   return (
@@ -47,6 +48,8 @@ export function MessageItem({
 }) {
   const [copied, setCopied] = useState(false);
   const [localFeedback, setLocalFeedback] = useState(message.feedback || null);
+  const [isSubmittingDetailedFeedback, setIsSubmittingDetailedFeedback] = useState(false);
+  const [hasSubmittedDetailedFeedback, setHasSubmittedDetailedFeedback] = useState(message.has_detailed_feedback || false);
   const dispatch = useDispatch();
   const isUser = message.role === 'user';
   const contentRef = useRef(null);
@@ -129,15 +132,43 @@ export function MessageItem({
 
       setLocalFeedback(newFeedback);
 
-      dispatch(updateMessageRating({ 
-        sessionId: sessionId, 
-        messageId: message.id, 
+      dispatch(updateMessageRating({
+        sessionId: sessionId,
+        messageId: message.id,
         rating: newFeedback,
       }));
 
     } catch (error) {
       console.error('Failed to submit feedback:', error);
       toast.error('Failed to submit feedback');
+    }
+  };
+
+  const handleDetailedFeedbackSubmit = async (feedbackData) => {
+    if (!sessionId || !message.id) {
+      toast.error('Unable to submit detailed feedback');
+      return;
+    }
+
+    setIsSubmittingDetailedFeedback(true);
+
+    try {
+      await apiClient.post(endpoints.feedback.submit, {
+        session_id: sessionId,
+        feedback_type: 'rating',
+        message_id: message.id,
+        rating: localFeedback === 'like' ? 5 : 1,
+        preference: localFeedback,
+        additional_feedback_json: feedbackData,
+      });
+
+      setHasSubmittedDetailedFeedback(true);
+      toast.success('Detailed feedback submitted successfully');
+    } catch (error) {
+      console.error('Failed to submit detailed feedback:', error);
+      toast.error('Failed to submit detailed feedback');
+    } finally {
+      setIsSubmittingDetailedFeedback(false);
     }
   };
 
@@ -212,7 +243,7 @@ export function MessageItem({
         <div className="group flex items-start gap-3 justify-end">
           <div className="bg-orange-500 text-white px-3 py-2 rounded-lg max-w-2xl">
             {isLoadingPrompt ? (
-              <div className="flex items-center gap-1 h-6">
+              <div className="flex items-center gap-1 sm:h-6 h-4">
                 <span className="inline-block w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                 <span className="inline-block w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                 <span className="inline-block w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
@@ -359,6 +390,18 @@ export function MessageItem({
           )}
         </div>
       </div>
+      {sessionMode === 'direct' && localFeedback && message?.temp_audio_url && !message.isStreaming && !hasSubmittedDetailedFeedback && (
+        <>
+          <div className="border-t border-gray-200 mt-3" />
+          <div className="p-2">
+          <TtsDetailedFeedback
+            mode="direct"
+            onSubmit={handleDetailedFeedbackSubmit}
+            isSubmitting={isSubmittingDetailedFeedback}
+          />
+          </div>
+        </>
+      )}
     </div>
   );
 }
