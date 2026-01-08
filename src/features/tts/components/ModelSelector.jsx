@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { setSelectedMode, setSelectedModels, setActiveSession, resetLanguageSettings, setSelectedLanguage } from '../store/chatSlice';
+import { getAvailableLanguages, getValidLanguage } from '../utils/languageUtils';
 import { useNavigate, useParams } from 'react-router-dom';
-import { setSelectedMode, setSelectedModels, setActiveSession, resetLanguageSettings } from '../store/chatSlice';
 import { ModeDropdown } from './ModeDropdown';
 import { ModelDropdown } from './ModelDropdown';
 import { fetchModelsTTS } from '../../models/store/modelsSlice';
@@ -13,7 +14,7 @@ export function ModelSelector({ variant = 'full' }) {
   const { tenant: urlTenant } = useParams();
   const { tenant: contextTenant } = useTenant();
   const currentTenant = urlTenant || contextTenant;
-  const { activeSession, selectedMode, selectedModels } = useSelector((state) => state.ttsChat);
+  const { activeSession, selectedMode, selectedModels, selectedLanguage } = useSelector((state) => state.ttsChat);
 
   const { models, loading } = useSelector((state) => state.models);
 
@@ -94,6 +95,18 @@ export function ModelSelector({ variant = 'full' }) {
     }
     newModels[slot] = model.id;
     dispatch(setSelectedModels(newModels));
+
+    const availableLanguages = getAvailableLanguages(
+      mode,
+      models,
+      slot === 'modelA' ? model.id : newModels.modelA,
+      slot === 'modelB' ? model.id : newModels.modelB
+    );
+
+    const validLanguage = getValidLanguage(selectedLanguage, availableLanguages);
+    if (validLanguage !== selectedLanguage) {
+      dispatch(setSelectedLanguage(validLanguage));
+    }
 
     if (isChangingActiveSessionModel) {
       const currentMode = activeSession.mode;
