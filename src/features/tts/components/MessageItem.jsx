@@ -11,23 +11,45 @@ import { AudioMessageBubble } from './AudioMessageBubble';
 import TtsDetailedFeedback from './TtsDetailedFeedback';
 
 function InlineErrorIndicator({ error, onRegenerate, canRegenerate }) {
+  const [showDetails, setShowDetails] = useState(false);
+  
   return (
-    <div className="not-prose mt-4 p-3 bg-red-50 border border-red-200 rounded-md flex flex-col sm:flex-row items-center gap-3 text-left">
-      <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0" />
-      <div className="flex-grow">
-        <p className="text-sm font-semibold text-red-800">Generation Failed</p>
-        <p className="text-xs text-red-700 mt-1 break-words">
-          {error || 'An unexpected error occurred.'}
-        </p>
+    <div className="not-prose mt-4 p-4 sm:p-5 bg-gradient-to-r from-orange-50 via-orange-50 to-yellow-50 border border-orange-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+        <div className="flex-shrink-0 mt-0.5">
+          <AlertTriangle className="w-5 h-5 text-orange-500" />
+        </div>
+        
+        <div className="flex-grow min-w-0">
+          <p className="text-sm font-semibold text-orange-900">Generation failed</p>
+          <p className="text-sm text-orange-800 mt-1">This model landed into an issue.</p>
+          
+          {error && error !== 'An unexpected error occurred.' && (
+            <button
+              onClick={() => setShowDetails(!showDetails)}
+              className="mt-2 text-xs text-orange-700 hover:text-orange-900 underline font-medium"
+            >
+              {showDetails ? 'Hide details' : 'View details'}
+            </button>
+          )}
+          
+          {showDetails && error && (
+            <div className="mt-3 p-2 bg-white bg-opacity-60 rounded border border-orange-200 text-xs text-gray-600 font-mono break-words max-h-24 overflow-y-auto">
+              {error}
+            </div>
+          )}
+        </div>
+        
+        {canRegenerate && (
+          <button
+            onClick={onRegenerate}
+            className="mt-3 sm:mt-0 flex-shrink-0 w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white rounded-lg font-medium text-sm transition-colors duration-200 shadow-sm hover:shadow-md"
+          >
+            <RefreshCw size={16} />
+            Try Again
+          </button>
+        )}
       </div>
-      {canRegenerate &&
-        <button
-          onClick={onRegenerate}
-          className="mt-2 sm:mt-0 flex-shrink-0 inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-700 hover:bg-gray-50"
-        >
-          <RefreshCw size={14} />
-          Try Again
-        </button>}
     </div>
   );
 }

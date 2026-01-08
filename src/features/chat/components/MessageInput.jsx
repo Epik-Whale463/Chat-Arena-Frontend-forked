@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, LoaderCircle, Info, Image, Mic, Languages } from 'lucide-react';
+import { Send, LoaderCircle, Info, Image, Mic, Languages, X, AudioLines, FileText, Plus } from 'lucide-react';
 import { useStreamingMessage } from '../hooks/useStreamingMessage';
 import { useStreamingMessageCompare } from '../hooks/useStreamingMessagesCompare';
 import { toast } from 'react-hot-toast';
@@ -11,7 +11,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { createSession, setSelectedLanguage, setIsTranslateEnabled, setMessageInputHeight } from '../store/chatSlice';
 import { useNavigate, useParams } from 'react-router-dom';
 import { IndicTransliterate } from "@ai4bharat/indic-transliterate-transcribe";
-import { API_BASE_URL } from '../../../shared/api/client';
+import { API_BASE_URL, apiClient } from '../../../shared/api/client';
 import { TranslateIcon } from '../../../shared/icons/TranslateIcon';
 import { LanguageSelector } from './LanguageSelector';
 import { PrivacyNotice } from './PrivacyNotice';
@@ -41,6 +41,90 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
   } = usePrivacyConsent();
   const micButtonRef = useRef(null);
   const [voiceState, setVoiceState] = useState('idle');
+
+  // Image upload states
+  const imageInputRef = useRef(null);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState({ url: null, path: null });
+
+  // Audio upload states
+  const audioInputRef = useRef(null);
+  const [selectedAudio, setSelectedAudio] = useState(null);
+  const [audioName, setAudioName] = useState(null);
+  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
+  const [uploadedAudio, setUploadedAudio] = useState({ url: null, path: null });
+
+  // Document upload states
+  const docInputRef = useRef(null);
+  const [selectedDocument, setSelectedDocument] = useState(null);
+  const [documentName, setDocumentName] = useState(null);
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+  const [uploadedDocument, setUploadedDocument] = useState({ url: null, path: null });
+
+  // Unified Upload Menu State
+  const [isUploadMenuOpen, setIsUploadMenuOpen] = useState(false);
+  const uploadMenuRef = useRef(null);
+
+  // Drag and Drop State
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounter = useRef(0);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (uploadMenuRef.current && !uploadMenuRef.current.contains(event.target)) {
+        setIsUploadMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [uploadMenuRef]);
+
+  // Clipboard paste handler for images
+  useEffect(() => {
+    const handlePaste = async (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          
+          // Check if file already exists
+          if (uploadedImage.url || uploadedAudio.url || uploadedDocument.url) {
+            toast.error('Please remove the existing attachment before adding a new one');
+            return;
+          }
+
+          const file = item.getAsFile();
+          if (!file) return;
+
+          // Validate file size (max 10MB)
+          if (file.size > 10 * 1024 * 1024) {
+            toast.error('Image size must be less than 10MB');
+            return;
+          }
+
+          setSelectedImage(file);
+          setImagePreview(URL.createObjectURL(file));
+          await uploadImageToBackend(file);
+          break;
+        }
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => {
+      document.removeEventListener('paste', handlePaste);
+    };
+  }, [uploadedImage.url, uploadedAudio.url, uploadedDocument.url]);
+
 
   // Notify parent about input activity (only if input has content)
   useEffect(() => {
@@ -80,7 +164,278 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
     }
   }, [activeSession, isCentered]);
 
+  // Image handling functions
+  const handleImageSelect = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select a valid image file');
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image size must be less than 10MB');
+      return;
+    }
+
+    setSelectedImage(file);
+    setImagePreview(URL.createObjectURL(file));
+
+    // Upload immediately after selection
+    await uploadImageToBackend(file);
+
+    // Reset file input
+    e.target.value = '';
+  };
+
+  const uploadImageToBackend = async (file) => {
+    setIsUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await apiClient.post('/messages/upload_image/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      if (!response.data.url) {
+        throw new Error('No URL returned from server');
+      }
+
+      setUploadedImage({ url: response.data.url, path: response.data.path });
+      toast.success('Image uploaded successfully');
+    } catch (error) {
+      console.error('Image upload error:', error);
+      toast.error('Failed to upload image');
+      removeImage();
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    setUploadedImage({ url: null, path: null });
+  };
+
+  // Audio handling functions
+  const handleAudioSelect = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const validAudioTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/wave', 'audio/ogg', 'audio/webm', 'audio/mp4', 'audio/m4a'];
+    if (!validAudioTypes.includes(file.type)) {
+      toast.error('Please select a valid audio file (mp3, wav, ogg, webm, m4a)');
+      return;
+    }
+
+    // Validate file size (max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('Audio size must be less than 50MB');
+      return;
+    }
+
+    setSelectedAudio(file);
+    setAudioName(file.name);
+
+    // Upload immediately after selection
+    await uploadAudioToBackend(file);
+
+    // Reset file input
+    e.target.value = '';
+  };
+
+  const uploadAudioToBackend = async (file) => {
+    setIsUploadingAudio(true);
+    try {
+      const formData = new FormData();
+      formData.append('audio', file);
+
+      const response = await apiClient.post('/messages/upload_audio/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      if (!response.data.url) {
+        throw new Error('No URL returned from server');
+      }
+
+      setUploadedAudio({ url: response.data.url, path: response.data.path });
+      toast.success('Audio uploaded successfully');
+    } catch (error) {
+      console.error('Audio upload error:', error);
+      toast.error(error.response?.data?.error || 'Failed to upload audio');
+      removeAudio();
+    } finally {
+      setIsUploadingAudio(false);
+    }
+  };
+
+  const removeAudio = () => {
+    setSelectedAudio(null);
+    setAudioName(null);
+    setUploadedAudio({ url: null, path: null });
+  };
+
+  // Document handling functions
+  const handleDocumentSelect = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const validDocTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+      'text/markdown',
+      'application/rtf',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'text/csv'
+    ];
+
+    if (!validDocTypes.includes(file.type)) {
+      toast.error('Please select a valid document (PDF, DOC, DOCX, TXT, MD, RTF, XLS, XLSX, CSV)');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Document size must be less than 5MB');
+      return;
+    }
+
+    setSelectedDocument(file);
+    setDocumentName(file.name);
+
+    // Upload immediately after selection
+    await uploadDocumentToBackend(file);
+
+    // Reset file input
+    e.target.value = '';
+  };
+
+  const uploadDocumentToBackend = async (file) => {
+    setIsUploadingDoc(true);
+    try {
+      const formData = new FormData();
+      formData.append('document', file);
+
+      const response = await apiClient.post('/messages/upload_document/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      if (!response.data.url) {
+        throw new Error('No URL returned from server');
+      }
+
+      setUploadedDocument({ url: response.data.url, path: response.data.path });
+      toast.success('Document uploaded successfully');
+    } catch (error) {
+      console.error('Document upload error:', error);
+      toast.error(error.response?.data?.error || 'Failed to upload document');
+      removeDocument();
+    } finally {
+      setIsUploadingDoc(false);
+    }
+  };
+
+  const removeDocument = () => {
+    setSelectedDocument(null);
+    setDocumentName(null);
+    setUploadedDocument({ url: null, path: null });
+  };
+
+  // Drag and Drop Handlers
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current++;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    dragCounter.current = 0;
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0]; // Only process the first file
+
+      // Check if file already exists
+      if (uploadedImage.url || uploadedAudio.url || uploadedDocument.url) {
+        toast.error('Please remove the existing attachment before adding a new one');
+        return;
+      }
+
+      // Determine file type and process accordingly
+      if (file.type.startsWith('image/')) {
+        // Validate image size (max 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+          toast.error('Image size must be less than 10MB');
+          return;
+        }
+        setSelectedImage(file);
+        setImagePreview(URL.createObjectURL(file));
+        await uploadImageToBackend(file);
+      } else if (file.type.startsWith('audio/') || ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/wave', 'audio/ogg', 'audio/webm', 'audio/mp4', 'audio/m4a'].includes(file.type)) {
+        // Validate audio size (max 50MB)
+        if (file.size > 50 * 1024 * 1024) {
+          toast.error('Audio size must be less than 50MB');
+          return;
+        }
+        setSelectedAudio(file);
+        setAudioName(file.name);
+        await uploadAudioToBackend(file);
+      } else if (['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'text/markdown', 'application/rtf', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/csv'].includes(file.type)) {
+        // Validate document size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error('Document size must be less than 5MB');
+          return;
+        }
+        setSelectedDocument(file);
+        setDocumentName(file.name);
+        await uploadDocumentToBackend(file);
+      } else {
+        toast.error('Unsupported file type. Please upload images, audio (mp3, wav, ogg, webm, m4a), or documents (PDF, DOC, DOCX, TXT, MD, RTF, XLS, XLSX, CSV)');
+      }
+    }
+  };
+
+
   const performActualSubmit = async (content) => {
+    // Capture image, audio, and document URLs before clearing
+    const imageUrl = uploadedImage.url;
+    const imagePath = uploadedImage.path;
+    const audioUrl = uploadedAudio.url;
+    const audioPath = uploadedAudio.path;
+    const docUrl = uploadedDocument.url;
+    const docPath = uploadedDocument.path;
+
+
     if (!activeSession) {
       if (!selectedMode ||
         (selectedMode === 'direct' && !selectedModels?.modelA) ||
@@ -96,6 +451,12 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
           modelA: selectedModels.modelA,
           modelB: selectedModels.modelB,
           type: 'LLM',
+          tenant: currentTenant,
+          metadata: {
+            has_image: !!imagePath,
+            has_audio: !!audioPath,
+            has_document: !!docPath
+          }
         })).unwrap();
 
         // Navigate with tenant prefix if available
@@ -105,12 +466,15 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
         navigate(navigatePath, { replace: true });
 
         setInput('');
+        removeImage();
+        removeAudio();
+        removeDocument();
         setIsStreaming(true);
 
         if (selectedMode === 'direct') {
-          await streamMessage({ sessionId: result.id, content, modelId: result.model_a?.id, parent_message_ids: [] });
+          await streamMessage({ sessionId: result.id, content, modelId: result.model_a?.id, parent_message_ids: [], imageUrl, imagePath, audioUrl, audioPath, docUrl, docPath });
         } else {
-          await streamMessageCompare({ sessionId: result.id, content, modelAId: result.model_a?.id, modelBId: result.model_b?.id, parentMessageIds: [] });
+          await streamMessageCompare({ sessionId: result.id, content, modelAId: result.model_a?.id, modelBId: result.model_b?.id, parentMessageIds: [], imageUrl, imagePath, audioUrl, audioPath, docUrl, docPath });
         }
       } catch (error) {
         toast.error('Failed to create session');
@@ -121,15 +485,18 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
       }
     } else {
       setInput('');
+      removeImage();
+      removeAudio();
+      removeDocument();
       setIsStreaming(true);
 
       try {
         if (activeSession?.mode === 'direct') {
           const parentMessageIds = messages[activeSession.id].filter(msg => msg.role === 'assistant').slice(-1).map(msg => msg.id);
-          await streamMessage({ sessionId, content, modelId: modelAId, parent_message_ids: parentMessageIds, });
+          await streamMessage({ sessionId, content, modelId: modelAId, parent_message_ids: parentMessageIds, imageUrl, imagePath, audioUrl, audioPath, docUrl, docPath });
         } else {
           const parentMessageIds = messages[activeSession.id].filter(msg => msg.role === 'assistant').slice(-2).map(msg => msg.id);
-          await streamMessageCompare({ sessionId, content, modelAId, modelBId, parent_message_ids: parentMessageIds });
+          await streamMessageCompare({ sessionId, content, modelAId, modelBId, parent_message_ids: parentMessageIds, imageUrl, imagePath, audioUrl, audioPath, docUrl, docPath });
         }
       } catch (error) {
         toast.error('Failed to send message');
@@ -201,8 +568,93 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
   return (
     <>
       <div className={`w-full px-2 sm:px-4 ${isCentered ? 'pb-0' : 'pb-2 sm:pb-4'} bg-transparent`}>
-        <form onSubmit={handleSubmit} className={`relative ${formMaxWidth}`}>
-          <div className={`relative flex flex-col bg-white border-2 border-orange-500 rounded-xl shadow-sm w-full`}>
+        <form 
+          onSubmit={handleSubmit} 
+          className={`relative ${formMaxWidth}`}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        >
+          <div className={`relative flex flex-col bg-white border-2 ${isDragging ? 'border-orange-600 bg-orange-50' : 'border-orange-500'} rounded-xl shadow-sm w-full transition-all duration-200`}>
+            {/* Drag Overlay */}
+            {isDragging && (
+              <div className="absolute inset-0 bg-orange-100 bg-opacity-80 rounded-xl flex items-center justify-center z-50 pointer-events-none">
+                <div className="text-center">
+                  <div className="text-orange-600 font-semibold text-lg mb-1">Drop file here</div>
+                  <div className="text-orange-500 text-sm">Images, Documents, or Audio</div>
+                </div>
+              </div>
+            )}
+            {/* Image Preview */}
+            {imagePreview && (
+              <div className="px-3 pt-3">
+                <div className="relative inline-block">
+                  <img
+                    src={imagePreview}
+                    alt="Selected"
+                    className="h-20 w-auto rounded-lg object-cover border border-gray-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeImage}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors"
+                    title="Remove image"
+                  >
+                    <X size={14} />
+                  </button>
+                  {isUploadingImage && (
+                    <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                      <LoaderCircle size={24} className="text-white animate-spin" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            {/* Audio Preview */}
+            {audioName && (
+              <div className="px-3 pt-3">
+                <div className="relative inline-flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg">
+                  <AudioLines size={18} className="text-orange-600" />
+                  <span className="text-sm text-gray-700 max-w-[200px] truncate">{audioName}</span>
+                  <button
+                    type="button"
+                    onClick={removeAudio}
+                    className="ml-2 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors"
+                    title="Remove audio"
+                  >
+                    <X size={14} />
+                  </button>
+                  {isUploadingAudio && (
+                    <div className="absolute inset-0 bg-black/30 rounded-lg flex items-center justify-center">
+                      <LoaderCircle size={20} className="text-orange-600 animate-spin" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            {/* Document Preview */}
+            {documentName && (
+              <div className="px-3 pt-3">
+                <div className="relative inline-flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                  <FileText size={18} className="text-blue-600" />
+                  <span className="text-sm text-gray-700 max-w-[200px] truncate">{documentName}</span>
+                  <button
+                    type="button"
+                    onClick={removeDocument}
+                    className="ml-2 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors"
+                    title="Remove document"
+                  >
+                    <X size={14} />
+                  </button>
+                  {isUploadingDoc && (
+                    <div className="absolute inset-0 bg-black/30 rounded-lg flex items-center justify-center">
+                      <LoaderCircle size={20} className="text-blue-600 animate-spin" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
             <IndicTransliterate
               key={`indic-${selectedLanguage || 'default'}-${isTranslateEnabled}`}
               customApiURL={`${API_BASE_URL}/xlit-api/generic/transliteration/`}
@@ -298,15 +750,83 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
                     <Mic size={18} className="sm:w-5 sm:h-5" />
                   )}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => toast('Image upload coming soon!')}
-                  className="p-1.5 sm:p-2 text-gray-500 rounded-md hover:bg-gray-100 hover:text-orange-600 transition-colors disabled:opacity-50"
-                  aria-label="Attach file"
-                  title="Attach Images"
-                >
-                  <Image size={18} className="sm:w-5 sm:h-5" />
-                </button>
+                {/* Unified Upload Button */}
+                <div className="relative" ref={uploadMenuRef}>
+                  <input
+                    type="file"
+                    ref={imageInputRef}
+                    onChange={handleImageSelect}
+                    accept="image/*"
+                    className="hidden"
+                  />
+                  <input
+                    type="file"
+                    ref={audioInputRef}
+                    onChange={handleAudioSelect}
+                    accept="audio/*"
+                    className="hidden"
+                  />
+                  <input
+                    type="file"
+                    ref={docInputRef}
+                    onChange={handleDocumentSelect}
+                    accept=".pdf,.doc,.docx,.txt,.md,.rtf,.xls,.xlsx,.csv"
+                    className="hidden"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setIsUploadMenuOpen(!isUploadMenuOpen)}
+                    className={`p-1.5 sm:p-2 rounded-full transition-colors ${isUploadMenuOpen ? 'bg-gray-200 text-gray-800' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                    aria-label="Add attachments"
+                    title="Add attachments"
+                  >
+                    <Plus size={20} className="sm:w-5 sm:h-5" />
+                  </button>
+
+                  {/* Upload Menu */}
+                  {isUploadMenuOpen && (
+                    <div className="absolute bottom-full right-0 mb-3 w-56 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200">
+                      <div className="p-1.5">
+                        <button
+                          type="button"
+                          onClick={() => { imageInputRef.current?.click(); setIsUploadMenuOpen(false); }}
+                          disabled={isUploadingImage}
+                          className="flex items-center gap-3 w-full px-3 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100 text-green-600">
+                            {isUploadingImage ? <LoaderCircle size={16} className="animate-spin" /> : <Image size={16} />}
+                          </div>
+                          <span className="font-medium">Upload Image</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => { docInputRef.current?.click(); setIsUploadMenuOpen(false); }}
+                          disabled={isUploadingDoc}
+                          className="flex items-center gap-3 w-full px-3 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-600">
+                            {isUploadingDoc ? <LoaderCircle size={16} className="animate-spin" /> : <FileText size={16} />}
+                          </div>
+                          <span className="font-medium">Upload Document</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => { audioInputRef.current?.click(); setIsUploadMenuOpen(false); }}
+                          disabled={isUploadingAudio}
+                          className="flex items-center gap-3 w-full px-3 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-orange-100 text-orange-600">
+                            {isUploadingAudio ? <LoaderCircle size={16} className="animate-spin" /> : <AudioLines size={16} />}
+                          </div>
+                          <span className="font-medium">Upload Audio</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <button
                   type="submit"
                   aria-label="Send message"
