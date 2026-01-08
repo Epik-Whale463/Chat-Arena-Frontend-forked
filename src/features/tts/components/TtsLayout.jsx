@@ -8,21 +8,31 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { AuthPromptBanner } from '../../auth/components/AuthPromptBanner';
 import { fetchSessionById, setActiveSession, clearMessages, resetLanguageSettings } from '../store/chatSlice';
 import { PanelLeftOpen, Plus } from 'lucide-react';
-import { LeaderboardFilters } from './LeaderboardFilters';
 import { LeaderboardContent } from './LeaderboardContent';
 import useDocumentTitle from '../../../shared/hooks/useDocumentTitle';
+import { LeaderboardFilters } from '../../leaderboard/components/LeaderboardFilters';
+import { Grid3x3, FileText } from 'lucide-react';
+import { useTenant } from '../../../shared/context/TenantContext';
 
 
 export function TtsLayout() {
-  const { sessionId } = useParams();
+  const { sessionId, tenant: urlTenant } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { activeSession } = useSelector((state) => state.ttsChat);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const { tenant: contextTenant } = useTenant();
+  const currentTenant = urlTenant || contextTenant;
 
-  // Check if we're on a leaderboard route
-  const isLeaderboardRoute = location.pathname.startsWith('/leaderboard');
+  // Check if we're on a leaderboard route (with or without tenant prefix)
+  const isLeaderboardRoute = location.pathname.includes('/leaderboard');
+
+  const filters = [
+    { name: 'Overview', suffix: 'overview', icon: Grid3x3 },
+    { name: 'TTS', suffix: 'tts', icon: FileText },
+    { name: 'Top Contributors', suffix: 'contributors', icon: null },
+  ];
 
   useEffect(() => {
     const applyResponsiveSidebar = () => {
@@ -51,7 +61,11 @@ export function TtsLayout() {
     dispatch(setActiveSession(null));
     dispatch(clearMessages());
     dispatch(resetLanguageSettings());
-    navigate('/tts');
+    if (currentTenant) {
+      navigate(`/${currentTenant}/tts`);
+    } else {
+      navigate('/tts');
+    }
   };
 
   useDocumentTitle('Indic TTS Arena');
@@ -59,7 +73,7 @@ export function TtsLayout() {
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Auth Prompt Banner */}
-      <AuthPromptBanner session_type="TTS"/>
+      <AuthPromptBanner session_type="TTS" />
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
@@ -80,7 +94,11 @@ export function TtsLayout() {
                   >
                     <PanelLeftOpen size={20} />
                   </button>
-                  <LeaderboardFilters />
+                  <LeaderboardFilters
+                    basePath={currentTenant ? `/${currentTenant}/leaderboard/tts` : "/leaderboard/tts"}
+                    availableFilters={filters}
+                  />
+
                 </div>
               </div>
             ) : (

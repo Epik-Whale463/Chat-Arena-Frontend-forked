@@ -8,9 +8,11 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { AuthPromptBanner } from '../../auth/components/AuthPromptBanner';
 import { fetchSessionById, setActiveSession, clearMessages, resetLanguageSettings } from '../store/chatSlice';
 import { PanelLeftOpen, Plus } from 'lucide-react';
-import { LeaderboardFilters } from './LeaderboardFilters';
 import { LeaderboardContent } from './LeaderboardContent';
 import useDocumentTitle from '../../../shared/hooks/useDocumentTitle';
+import { useTenant } from '../../../shared/context/TenantContext';
+import { LeaderboardFilters } from '../../leaderboard/components/LeaderboardFilters';
+import { Grid3x3, FileText, Mic } from 'lucide-react';
 
 
 export function AsrLayout() {
@@ -20,9 +22,18 @@ export function AsrLayout() {
   const dispatch = useDispatch();
   const { activeSession } = useSelector((state) => state.asrChat);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const { tenant: urlTenant } = useParams();
+  const { tenant: contextTenant } = useTenant();
+  const currentTenant = urlTenant || contextTenant;
 
-  // Check if we're on a leaderboard route
-  const isLeaderboardRoute = location.pathname.startsWith('/leaderboard/asr');
+  // Check if we're on a leaderboard route (with or without tenant prefix)
+  const isLeaderboardRoute = location.pathname.includes('/leaderboard');
+
+  const filters = [
+    { name: 'Overview', suffix: 'overview', icon: Grid3x3 },
+    { name: 'ASR', suffix: 'asr', icon: Mic },
+    { name: 'Top Contributors', suffix: 'contributors', icon: null },
+  ];
 
   useEffect(() => {
     const applyResponsiveSidebar = () => {
@@ -51,7 +62,11 @@ export function AsrLayout() {
     dispatch(setActiveSession(null));
     dispatch(clearMessages());
     dispatch(resetLanguageSettings());
-    navigate('/asr');
+    if (currentTenant) {
+      navigate(`/${currentTenant}/asr`);
+    } else {
+      navigate('/asr');
+    }
   };
 
   useDocumentTitle('Indic ASR Arena');
@@ -59,7 +74,7 @@ export function AsrLayout() {
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Auth Prompt Banner */}
-      <AuthPromptBanner session_type="ASR"/>
+      <AuthPromptBanner session_type="ASR" />
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
@@ -80,7 +95,11 @@ export function AsrLayout() {
                   >
                     <PanelLeftOpen size={20} />
                   </button>
-                  <LeaderboardFilters />
+                  <LeaderboardFilters
+                    basePath={currentTenant ? `/${currentTenant}/leaderboard/asr` : "/leaderboard/asr"}
+                    availableFilters={filters}
+                  />
+
                 </div>
               </div>
             ) : (
