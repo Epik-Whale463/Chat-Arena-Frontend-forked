@@ -1,15 +1,16 @@
 import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { setSelectedMode, setSelectedModels, setActiveSession, resetLanguageSettings } from '../store/chatSlice';
+import { setSelectedMode, setSelectedModels, setActiveSession, resetLanguageSettings, setSelectedLanguage } from '../store/chatSlice';
 import { ModeDropdown } from './ModeDropdown';
 import { ModelDropdown } from './ModelDropdown';
 import { fetchModelsTTS } from '../../models/store/modelsSlice';
+import { getAvailableLanguages, getValidLanguage } from '../utils/languageUtils';
 
 export function ModelSelector({ variant = 'full' }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { activeSession, selectedMode, selectedModels } = useSelector((state) => state.ttsChat);
+  const { activeSession, selectedMode, selectedModels, selectedLanguage } = useSelector((state) => state.ttsChat);
 
   const { models, loading } = useSelector((state) => state.models);
 
@@ -75,18 +76,30 @@ export function ModelSelector({ variant = 'full' }) {
 
   const handleModelSelect = (model, slot) => {
     const newModels = { ...modelsInUse };
-    
+
     const isChangingActiveSessionModel = activeSession && (
       (slot === 'modelA' && activeSession.model_a?.id !== model.id) ||
       (slot === 'modelB' && activeSession.model_b?.id !== model.id)
     );
-    
+
     if (slot === 'modelA' && mode === 'compare' && model.id === newModels.modelB) {
         newModels.modelB = models.find(m => m.id !== model.id)?.id || null;
     }
     newModels[slot] = model.id;
     dispatch(setSelectedModels(newModels));
-    
+
+    const availableLanguages = getAvailableLanguages(
+      mode,
+      models,
+      slot === 'modelA' ? model.id : newModels.modelA,
+      slot === 'modelB' ? model.id : newModels.modelB
+    );
+
+    const validLanguage = getValidLanguage(selectedLanguage, availableLanguages);
+    if (validLanguage !== selectedLanguage) {
+      dispatch(setSelectedLanguage(validLanguage));
+    }
+
     if (isChangingActiveSessionModel) {
       const currentMode = activeSession.mode;
       dispatch(setSelectedMode(currentMode));

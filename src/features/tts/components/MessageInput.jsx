@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Send, LoaderCircle, Info, Image, Mic, Languages } from 'lucide-react';
 import { useStreamingMessage } from '../hooks/useStreamingMessage';
 import { useStreamingMessageCompare } from '../hooks/useStreamingMessagesCompare';
@@ -16,11 +16,13 @@ import { TranslateIcon } from '../../../shared/icons/TranslateIcon';
 import { LanguageSelector } from './LanguageSelector';
 import { PrivacyNotice } from './PrivacyNotice';
 import TextareaAutosize from 'react-textarea-autosize';
+import { getAvailableLanguages, getValidLanguage } from '../utils/languageUtils';
 
 export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false, isSidebarOpen = true, onInputActivityChange }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { activeSession, messages, selectedMode, selectedModels, selectedLanguage, isTranslateEnabled } = useSelector((state) => state.ttsChat);
+  const { models } = useSelector((state) => state.models);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
@@ -203,18 +205,44 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
   const currentMode = activeSession?.mode ?? selectedMode;
   const isAcademicMode = currentMode === 'academic';
 
+  const currentModelAId = activeSession?.model_a?.id ?? selectedModels?.modelA;
+  const currentModelBId = activeSession?.model_b?.id ?? selectedModels?.modelB;
+
+  const availableLanguages = useMemo(() => {
+    return getAvailableLanguages(currentMode, models, currentModelAId, currentModelBId);
+  }, [currentMode, models, currentModelAId, currentModelBId]);
+
+  useEffect(() => {
+    if (availableLanguages && availableLanguages.length > 0) {
+      const validLanguage = getValidLanguage(selectedLanguage, availableLanguages);
+      if (validLanguage !== selectedLanguage) {
+        dispatch(setSelectedLanguage(validLanguage));
+      }
+    }
+  }, [availableLanguages, selectedLanguage, dispatch]);
+
   // Academic mode: Show only language selector and enter button
   if (isAcademicMode) {
     return (
       <>
         <div className={`w-full px-2 sm:px-4 ${isCentered ? 'pb-0' : 'pb-2 sm:pb-4'} bg-transparent`}>
           <form onSubmit={handleSubmit} className={`relative ${formMaxWidth}`}>
+            <div className="mb-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg">
+              <div className="flex items-center justify-center gap-2">
+                <Info size={16} className="text-orange-600 flex-shrink-0" />
+                <p className="text-xs text-orange-700">
+                  Select language and start - prompt will be auto-generated
+                </p>
+              </div>
+            </div>
+
             <div className={`relative flex items-center justify-between bg-white border-2 border-orange-500 rounded-xl shadow-sm w-full p-3`}>
               <div className="flex items-center gap-3">
                 <span className="text-gray-700 text-sm font-medium">Language:</span>
                 <LanguageSelector
                   value={selectedLanguage}
                   onChange={(e) => dispatch(setSelectedLanguage(e.target.value))}
+                  availableLanguages={availableLanguages}
                 />
               </div>
               <button
@@ -326,6 +354,7 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
                     <LanguageSelector
                       value={selectedLanguage}
                       onChange={(e) => dispatch(setSelectedLanguage(e.target.value))}
+                      availableLanguages={availableLanguages}
                     />
                   </div>
                 )}

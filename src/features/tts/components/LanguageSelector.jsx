@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 
-const languages = [
+const ALL_LANGUAGES = [
   { value: 'en', label: 'English' }, { value: 'hi', label: 'Hindi' },
   { value: 'mr', label: 'Marathi' }, { value: 'ta', label: 'Tamil' },
   { value: 'te', label: 'Telugu' }, { value: 'kn', label: 'Kannada' },
@@ -16,9 +16,16 @@ const languages = [
   { value: 'sa', label: 'Sanskrit' }, { value: 'gom', label: 'Goan Konkani' },
 ];
 
-export function LanguageSelector({ value, onChange }) {
+export function LanguageSelector({ value, onChange, availableLanguages = null }) {
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef(null);
+
+  const languages = useMemo(() => {
+    if (!availableLanguages || availableLanguages.length === 0) {
+      return ALL_LANGUAGES;
+    }
+    return ALL_LANGUAGES.filter(lang => availableLanguages.includes(lang.value));
+  }, [availableLanguages]);
 
   useEffect(() => {
     function handleClickOutside(event) {

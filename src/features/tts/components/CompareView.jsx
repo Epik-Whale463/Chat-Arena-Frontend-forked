@@ -155,6 +155,8 @@ export function CompareView({ session, messages, streamingMessages, onRegenerate
     lastTurn &&
     lastTurn.modelAMessage &&
     lastTurn.modelBMessage &&
+    lastTurn.modelAMessage.temp_audio_url &&
+    lastTurn.modelBMessage.temp_audio_url &&
     !lastTurn.modelAMessage.isStreaming &&
     !lastTurn.modelBMessage.isStreaming &&
     !lastTurn.userMessage.feedback;
