@@ -240,6 +240,8 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
       return;
     }
 
+    // Note: Duration limit (1 minute) is validated on the backend after upload
+
     setSelectedAudio(file);
     setAudioName(file.name);
 
@@ -435,6 +437,8 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
     const docUrl = uploadedDocument.url;
     const docPath = uploadedDocument.path;
 
+    const messageLanguage = (isTranslateEnabled ? selectedLanguage : 'en') || 'en';
+
 
     if (!activeSession) {
       if (!selectedMode ||
@@ -472,9 +476,9 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
         setIsStreaming(true);
 
         if (selectedMode === 'direct') {
-          await streamMessage({ sessionId: result.id, content, modelId: result.model_a?.id, parent_message_ids: [], imageUrl, imagePath, audioUrl, audioPath, docUrl, docPath });
+          await streamMessage({ sessionId: result.id, content, modelId: result.model_a?.id, parent_message_ids: [], language: messageLanguage, imageUrl, imagePath, audioUrl, audioPath, docUrl, docPath });
         } else {
-          await streamMessageCompare({ sessionId: result.id, content, modelAId: result.model_a?.id, modelBId: result.model_b?.id, parentMessageIds: [], imageUrl, imagePath, audioUrl, audioPath, docUrl, docPath });
+          await streamMessageCompare({ sessionId: result.id, content, modelAId: result.model_a?.id, modelBId: result.model_b?.id, parentMessageIds: [], language: messageLanguage, imageUrl, imagePath, audioUrl, audioPath, docUrl, docPath });
         }
       } catch (error) {
         toast.error('Failed to create session');
@@ -493,10 +497,10 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
       try {
         if (activeSession?.mode === 'direct') {
           const parentMessageIds = messages[activeSession.id].filter(msg => msg.role === 'assistant').slice(-1).map(msg => msg.id);
-          await streamMessage({ sessionId, content, modelId: modelAId, parent_message_ids: parentMessageIds, imageUrl, imagePath, audioUrl, audioPath, docUrl, docPath });
+          await streamMessage({ sessionId, content, modelId: modelAId, parent_message_ids: parentMessageIds, language: messageLanguage, imageUrl, imagePath, audioUrl, audioPath, docUrl, docPath });
         } else {
           const parentMessageIds = messages[activeSession.id].filter(msg => msg.role === 'assistant').slice(-2).map(msg => msg.id);
-          await streamMessageCompare({ sessionId, content, modelAId, modelBId, parent_message_ids: parentMessageIds, imageUrl, imagePath, audioUrl, audioPath, docUrl, docPath });
+          await streamMessageCompare({ sessionId, content, modelAId, modelBId, parent_message_ids: parentMessageIds, language: messageLanguage, imageUrl, imagePath, audioUrl, audioPath, docUrl, docPath });
         }
       } catch (error) {
         toast.error('Failed to send message');
@@ -655,6 +659,7 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
                 </div>
               </div>
             )}
+
             <IndicTransliterate
               key={`indic-${selectedLanguage || 'default'}-${isTranslateEnabled}`}
               customApiURL={`${API_BASE_URL}/xlit-api/generic/transliteration/`}
