@@ -67,6 +67,10 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
   const [isUploadMenuOpen, setIsUploadMenuOpen] = useState(false);
   const uploadMenuRef = useRef(null);
 
+  // Drag and Drop State
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCounter = useRef(0);
+
   // Close menu when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
@@ -79,6 +83,47 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [uploadMenuRef]);
+
+  // Clipboard paste handler for images
+  useEffect(() => {
+    const handlePaste = async (e) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        
+        if (item.type.startsWith('image/')) {
+          e.preventDefault();
+          
+          // Check if file already exists
+          if (uploadedImage.url || uploadedAudio.url || uploadedDocument.url) {
+            toast.error('Please remove the existing attachment before adding a new one');
+            return;
+          }
+
+          const file = item.getAsFile();
+          if (!file) return;
+
+          // Validate file size (max 10MB)
+          if (file.size > 10 * 1024 * 1024) {
+            toast.error('Image size must be less than 10MB');
+            return;
+          }
+
+          setSelectedImage(file);
+          setImagePreview(URL.createObjectURL(file));
+          await uploadImageToBackend(file);
+          break;
+        }
+      }
+    };
+
+    document.addEventListener('paste', handlePaste);
+    return () => {
+      document.removeEventListener('paste', handlePaste);
+    };
+  }, [uploadedImage.url, uploadedAudio.url, uploadedDocument.url]);
 
 
   // Notify parent about input activity (only if input has content)
@@ -259,9 +304,9 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
       return;
     }
 
-    // Validate file size (max 20MB)
-    if (file.size > 20 * 1024 * 1024) {
-      toast.error('Document size must be less than 20MB');
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Document size must be less than 5MB');
       return;
     }
 
@@ -304,6 +349,80 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
     setSelectedDocument(null);
     setDocumentName(null);
     setUploadedDocument({ url: null, path: null });
+  };
+
+  // Drag and Drop Handlers
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current++;
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current--;
+    if (dragCounter.current === 0) {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    dragCounter.current = 0;
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0]; // Only process the first file
+
+      // Check if file already exists
+      if (uploadedImage.url || uploadedAudio.url || uploadedDocument.url) {
+        toast.error('Please remove the existing attachment before adding a new one');
+        return;
+      }
+
+      // Determine file type and process accordingly
+      if (file.type.startsWith('image/')) {
+        // Validate image size (max 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+          toast.error('Image size must be less than 10MB');
+          return;
+        }
+        setSelectedImage(file);
+        setImagePreview(URL.createObjectURL(file));
+        await uploadImageToBackend(file);
+      } else if (file.type.startsWith('audio/') || ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/wave', 'audio/ogg', 'audio/webm', 'audio/mp4', 'audio/m4a'].includes(file.type)) {
+        // Validate audio size (max 50MB)
+        if (file.size > 50 * 1024 * 1024) {
+          toast.error('Audio size must be less than 50MB');
+          return;
+        }
+        setSelectedAudio(file);
+        setAudioName(file.name);
+        await uploadAudioToBackend(file);
+      } else if (['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'text/markdown', 'application/rtf', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/csv'].includes(file.type)) {
+        // Validate document size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error('Document size must be less than 5MB');
+          return;
+        }
+        setSelectedDocument(file);
+        setDocumentName(file.name);
+        await uploadDocumentToBackend(file);
+      } else {
+        toast.error('Unsupported file type. Please upload images, audio (mp3, wav, ogg, webm, m4a), or documents (PDF, DOC, DOCX, TXT, MD, RTF, XLS, XLSX, CSV)');
+      }
+    }
   };
 
 
@@ -449,8 +568,24 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
   return (
     <>
       <div className={`w-full px-2 sm:px-4 ${isCentered ? 'pb-0' : 'pb-2 sm:pb-4'} bg-transparent`}>
-        <form onSubmit={handleSubmit} className={`relative ${formMaxWidth}`}>
-          <div className={`relative flex flex-col bg-white border-2 border-orange-500 rounded-xl shadow-sm w-full`}>
+        <form 
+          onSubmit={handleSubmit} 
+          className={`relative ${formMaxWidth}`}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+        >
+          <div className={`relative flex flex-col bg-white border-2 ${isDragging ? 'border-orange-600 bg-orange-50' : 'border-orange-500'} rounded-xl shadow-sm w-full transition-all duration-200`}>
+            {/* Drag Overlay */}
+            {isDragging && (
+              <div className="absolute inset-0 bg-orange-100 bg-opacity-80 rounded-xl flex items-center justify-center z-50 pointer-events-none">
+                <div className="text-center">
+                  <div className="text-orange-600 font-semibold text-lg mb-1">Drop file here</div>
+                  <div className="text-orange-500 text-sm">Images, Documents, or Audio</div>
+                </div>
+              </div>
+            )}
             {/* Image Preview */}
             {imagePreview && (
               <div className="px-3 pt-3">
