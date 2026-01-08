@@ -7,8 +7,8 @@ export function MessageList({ messages, streamingMessages, session, onExpand, on
   const mainScrollRef = useRef(null);
   const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
   const { isRegenerating, selectedMode } = useSelector((state) => ({
-    isRegenerating: state.chat.isRegenerating,
-    selectedMode: state.chat.selectedMode,
+    isRegenerating: state.ttsChat.isRegenerating,
+    selectedMode: state.ttsChat.selectedMode,
   }));
   useEffect(() => {
     if (!isUserScrolledUp) {

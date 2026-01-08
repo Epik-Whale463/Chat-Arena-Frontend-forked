@@ -13,7 +13,7 @@ export function ModelSelector({ variant = 'full' }) {
   const { tenant: urlTenant } = useParams();
   const { tenant: contextTenant } = useTenant();
   const currentTenant = urlTenant || contextTenant;
-  const { activeSession, selectedMode, selectedModels } = useSelector((state) => state.chat);
+  const { activeSession, selectedMode, selectedModels } = useSelector((state) => state.asrChat);
 
   const { models, loading } = useSelector((state) => state.models);
 

@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 
 export function ConversationTurn({ turn, modelAName, modelBName, feedbackSelection, hoverPreview, onExpand, onRegenerate, isLastTurn, session }) {
   const { userMessage, modelAMessage, modelBMessage } = turn;
-  const isRegenerating = useSelector((state) => state.chat.isRegenerating);
+  const isRegenerating = useSelector((state) => state.asrChat.isRegenerating);
   let feedbackA = null;
   let feedbackB = null;
   if (feedbackSelection) {

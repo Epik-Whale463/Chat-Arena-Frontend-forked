@@ -1,31 +1,47 @@
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { motion } from 'framer-motion';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { CompareView } from './CompareView';
 import { ExpandedMessageView } from './ExpandedMessageView';
 import { NewChatLanding } from './NewChatLanding';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useStreamingMessage } from '../hooks/useStreamingMessage';
 import { toast } from 'react-hot-toast';
+import { setMessageInputHeight } from '../store/chatSlice';
 
 import { ServiceNavigationTile } from '../../../shared/components/ServiceNavigationTile';
 
 export function TtsWindow({ isSidebarOpen = true }) {
-  const { activeSession, messages, streamingMessages } = useSelector((state) => state.chat);
+  const dispatch = useDispatch();
+  const { activeSession, messages, streamingMessages } = useSelector((state) => state.ttsChat);
   const [expandedMessage, setExpandedMessage] = useState(null);
   const [isInputActive, setIsInputActive] = useState(false);
+  const [detailedFeedbackSubmitted, setDetailedFeedbackSubmitted] = useState(false);
 
   const sessionMessages = messages[activeSession?.id] || [];
   const sessionStreamingMessages = streamingMessages[activeSession?.id] || {};
 
-  // const isChatLocked = useMemo(() => {
-  //   if (activeSession?.mode !== 'random' || sessionMessages.length === 0) {
-  //     return false;
-  //   }
-  //   const lastUserMessage = [...sessionMessages].reverse().find(m => m.role === 'user');
-  //   return !!lastUserMessage?.feedback;
-  // }, [activeSession, sessionMessages]);
+  useEffect(() => {
+    setDetailedFeedbackSubmitted(false);
+  }, [activeSession?.id]);
+
+  const shouldHideInput = useMemo(() => {
+    if (activeSession?.mode !== 'academic' || sessionMessages.length === 0) {
+      return false;
+    }
+    return !detailedFeedbackSubmitted;
+  }, [activeSession, sessionMessages, detailedFeedbackSubmitted]);
+
+  useEffect(() => {
+    if (shouldHideInput) {
+      dispatch(setMessageInputHeight(-50));
+    }
+  }, [shouldHideInput, dispatch]);
+
+  const handleDetailedFeedbackStatusChange = (submitted) => {
+    setDetailedFeedbackSubmitted(submitted);
+  };
 
   const handleExpand = (message) => setExpandedMessage(message);
   const handleCloseExpand = () => setExpandedMessage(null);
@@ -80,6 +96,7 @@ export function TtsWindow({ isSidebarOpen = true }) {
                   streamingMessages={sessionStreamingMessages}
                   onRegenerate={handleRegenerate}
                   isSidebarOpen={isSidebarOpen}
+                  onDetailedFeedbackStatusChange={handleDetailedFeedbackStatusChange}
                 />
               ) : (
                 <MessageList
@@ -92,18 +109,20 @@ export function TtsWindow({ isSidebarOpen = true }) {
                 />
               )}
             </div>
-            <motion.div
-              className="w-full flex-shrink-0"
-            >
-              <MessageInput
-                isCentered={false}
-                sessionId={activeSession?.id}
-                modelAId={activeSession?.model_a?.id}
-                modelBId={activeSession?.model_b?.id}
-                // isLocked={isChatLocked}
-                isSidebarOpen={isSidebarOpen}
-              />
-            </motion.div>
+            {!shouldHideInput && (
+              <motion.div
+                className="w-full flex-shrink-0"
+              >
+                <MessageInput
+                  isCentered={false}
+                  sessionId={activeSession?.id}
+                  modelAId={activeSession?.model_a?.id}
+                  modelBId={activeSession?.model_b?.id}
+                  // isLocked={isChatLocked}
+                  isSidebarOpen={isSidebarOpen}
+                />
+              </motion.div>
+            )}
           </>
         )}
       </div>

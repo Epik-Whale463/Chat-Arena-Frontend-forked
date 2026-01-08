@@ -89,7 +89,7 @@ export function MessageInput({
   const { tenant: contextTenant } = useTenant();
   const currentTenant = urlTenant || contextTenant;
 
-  const { messages, activeSession, selectedMode, selectedModels, selectedLanguage } = useSelector((state) => state.chat);
+  const { messages, activeSession, selectedMode, selectedModels, selectedLanguage } = useSelector((state) => state.asrChat);
 
   const [recordingState, setRecordingState] = useState('idle');
   const [recordingDuration, setRecordingDuration] = useState(0);

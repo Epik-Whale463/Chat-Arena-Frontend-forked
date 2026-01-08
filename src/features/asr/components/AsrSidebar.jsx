@@ -374,7 +374,7 @@ export function AsrSidebar({ isOpen, onToggle }) {
   const { sessionId, tenant: urlTenant } = useParams();
   const { tenant: contextTenant } = useTenant();
   const currentTenant = urlTenant || contextTenant;
-  const { sessions } = useSelector((state) => state.chat);
+  const { sessions } = useSelector((state) => state.asrChat);
   const { user, isAnonymous } = useSelector((state) => state.auth);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isLeaderboardDropdownOpen, setIsLeaderboardDropdownOpen] = useState(false);

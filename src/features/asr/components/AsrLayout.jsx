@@ -20,7 +20,7 @@ export function AsrLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { activeSession } = useSelector((state) => state.chat);
+  const { activeSession } = useSelector((state) => state.asrChat);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { tenant: urlTenant } = useParams();
   const { tenant: contextTenant } = useTenant();

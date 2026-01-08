@@ -20,7 +20,7 @@ export function TtsLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { activeSession } = useSelector((state) => state.chat);
+  const { activeSession } = useSelector((state) => state.ttsChat);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { tenant: contextTenant } = useTenant();
   const currentTenant = urlTenant || contextTenant;

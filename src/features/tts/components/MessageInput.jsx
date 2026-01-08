@@ -24,7 +24,7 @@ export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false
   const { tenant: urlTenant } = useParams();
   const { tenant: contextTenant } = useTenant();
   const tenant = urlTenant || contextTenant;
-  const { activeSession, messages, selectedMode, selectedModels, selectedLanguage, isTranslateEnabled } = useSelector((state) => state.chat);
+  const { activeSession, messages, selectedMode, selectedModels, selectedLanguage, isTranslateEnabled } = useSelector((state) => state.ttsChat);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
