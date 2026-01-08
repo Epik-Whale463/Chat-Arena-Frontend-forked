@@ -371,7 +371,7 @@ export function AsrSidebar({ isOpen, onToggle }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { sessionId } = useParams();
-  const { sessions } = useSelector((state) => state.chat);
+  const { sessions } = useSelector((state) => state.asrChat);
   const { user, isAnonymous } = useSelector((state) => state.auth);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [isLeaderboardDropdownOpen, setIsLeaderboardDropdownOpen] = useState(false);

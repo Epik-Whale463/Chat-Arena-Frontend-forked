@@ -12,7 +12,7 @@ import { toast } from 'react-hot-toast';
 import { ServiceNavigationTile } from '../../../shared/components/ServiceNavigationTile';
 
 export function AsrWindow({ isSidebarOpen = true }) {
-  const { activeSession, messages, streamingMessages } = useSelector((state) => state.chat);
+  const { activeSession, messages, streamingMessages } = useSelector((state) => state.asrChat);
   const [expandedMessage, setExpandedMessage] = useState(null);
   const [isInputActive, setIsInputActive] = useState(false);
 

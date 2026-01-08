@@ -10,7 +10,7 @@ import { updateMessageFeedback, updateActiveSessionData } from '../store/chatSli
 import { useDispatch } from 'react-redux';
 import { useVotingGuide } from '../hooks/useVotingGuide';
 
-export function CompareView({ session, messages, streamingMessages, onRegenerate, isSidebarOpen = true }) {
+export function CompareView({ session, messages, streamingMessages, onRegenerate, isSidebarOpen = true, onDetailedFeedbackStatusChange }) {
   const endOfMessagesRef = useRef(null);
   const [feedbackState, setFeedbackState] = useState({ turnId: null, selection: null });
   const feedbackStateRef = useRef({ turnId: null, selection: null });
@@ -101,6 +101,9 @@ export function CompareView({ session, messages, streamingMessages, onRegenerate
       if (response.status >= 200 && response.status < 300) {
         setDetailedFeedbackSubmitted(true);
         toast.success('Detailed feedback submitted successfully');
+        if (onDetailedFeedbackStatusChange) {
+          onDetailedFeedbackStatusChange(true);
+        }
       }
     } catch (error) {
       console.error('Failed to submit detailed feedback:', error);

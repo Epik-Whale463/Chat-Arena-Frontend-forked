@@ -7,7 +7,7 @@ import { createSession } from '../store/chatSlice';
 import { useStreamingMessageCompare } from '../hooks/useStreamingMessagesCompare';
 
 export function CompareMessageInput({ sessionId, modelAId, modelBId }) {
-  const { activeSession, messages, selectedMode, selectedModels } = useSelector((state) => state.chat);
+  const { activeSession, messages, selectedMode, selectedModels } = useSelector((state) => state.ttsChat);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const textareaRef = useRef(null);

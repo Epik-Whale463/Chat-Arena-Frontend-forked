@@ -18,7 +18,7 @@ export function TtsLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { activeSession } = useSelector((state) => state.chat);
+  const { activeSession } = useSelector((state) => state.ttsChat);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Check if we're on a leaderboard route

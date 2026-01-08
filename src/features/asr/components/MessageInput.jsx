@@ -85,7 +85,7 @@ export function MessageInput({
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { messages, activeSession, selectedMode, selectedModels, selectedLanguage } = useSelector((state) => state.chat);
+  const { messages, activeSession, selectedMode, selectedModels, selectedLanguage } = useSelector((state) => state.asrChat);
 
   const [recordingState, setRecordingState] = useState('idle');
   const [recordingDuration, setRecordingDuration] = useState(0);

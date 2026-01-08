@@ -20,7 +20,7 @@ import TextareaAutosize from 'react-textarea-autosize';
 export function MessageInput({ sessionId, modelAId, modelBId, isCentered = false, isSidebarOpen = true, onInputActivityChange }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { activeSession, messages, selectedMode, selectedModels, selectedLanguage, isTranslateEnabled } = useSelector((state) => state.chat);
+  const { activeSession, messages, selectedMode, selectedModels, selectedLanguage, isTranslateEnabled } = useSelector((state) => state.ttsChat);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [isCreatingSession, setIsCreatingSession] = useState(false);

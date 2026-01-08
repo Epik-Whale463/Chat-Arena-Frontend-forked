@@ -17,7 +17,7 @@ export function ConversationTurn({
   detailedFeedbackSubmitted
 }) {
   const { userMessage, modelAMessage, modelBMessage } = turn;
-  const isRegenerating = useSelector((state) => state.chat.isRegenerating);
+  const isRegenerating = useSelector((state) => state.ttsChat.isRegenerating);
   let feedbackA = null;
   let feedbackB = null;
   if (feedbackSelection) {

@@ -15,7 +15,7 @@ export function useWebSocket(sessionId) {
   const maxReconnectAttempts = 5;
   const authFailures = useRef(0);
   const maxAuthFailures = 2;
-  const { activeSession, messages } = useSelector((state) => state.chat);
+  const { activeSession, messages } = useSelector((state) => state.ttsChat);
 
   const connect = useCallback(async () => {
     if (!sessionId || !user) return;

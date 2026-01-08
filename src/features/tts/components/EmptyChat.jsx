@@ -4,7 +4,7 @@ import { WelcomeMessage } from './WelcomeMessage';
 
 export function EmptyChat() {
   const { isAnonymous } = useSelector((state) => state.auth);
-  const { sessions } = useSelector((state) => state.chat);
+  const { sessions } = useSelector((state) => state.ttsChat);
   
   // Show welcome message for new users
   if (sessions.length === 0) {

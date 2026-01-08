@@ -168,7 +168,7 @@ const TtsDetailedFeedback = ({
   modelAName = 'Left Model',
   modelBName = 'Right Model'
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(mode === 'academic');
 
   // For direct mode: single set of ratings
   const [ratings, setRatings] = useState({});

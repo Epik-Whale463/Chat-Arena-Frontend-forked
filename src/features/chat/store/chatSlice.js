@@ -147,69 +147,6 @@ const chatSlice = createSlice({
         delete state.streamingMessages[sessionId][messageId];
       }
     },
-    updateStreamingMessageTTS: (state, action) => {
-      const {
-        sessionId,
-        messageId,
-        chunk,
-        isComplete,
-        participant = "a",
-        parentMessageIds,
-        language,
-        status,
-        error,
-      } = action.payload;
-
-      if (!state.streamingMessages[sessionId]) {
-        state.streamingMessages[sessionId] = {};
-      }
-
-      if (!state.streamingMessages[sessionId][messageId]) {
-        state.streamingMessages[sessionId][messageId] = {
-          content: '',
-          temp_audio_url: '',
-          isComplete: false,
-          parentMessageIds: parentMessageIds || [],
-          language,
-          status: status || 'streaming',
-          error: error || null,
-        };
-      }
-
-      const streamingMsg = state.streamingMessages[sessionId][messageId];
-      streamingMsg.temp_audio_url += chunk || '';
-      streamingMsg.participant = participant;
-      streamingMsg.isComplete = isComplete;
-      if (status) {
-        streamingMsg.status = status;
-      }
-      if (error) {
-        streamingMsg.error = error;
-      }
-
-      if (isComplete) {
-        // Move to regular messages
-        const message = {
-          id: messageId,
-          content: streamingMsg.content,
-          temp_audio_url: streamingMsg.temp_audio_url,
-          role: 'assistant',
-          timestamp: new Date().toISOString(),
-          participant: participant,
-          parent_message_ids: streamingMsg.parentMessageIds,
-          language: streamingMsg.language,
-          status: streamingMsg.status || 'success',
-          error: streamingMsg.error || null,
-        };
-
-        if (!state.messages[sessionId]) {
-          state.messages[sessionId] = [];
-        }
-        state.messages[sessionId].push(message);
-
-        delete state.streamingMessages[sessionId][messageId];
-      }
-    },
     setSessionState: (state, action) => {
       const { sessionId, messages, sessionData } = action.payload;
       state.messages[sessionId] = messages || [];
@@ -259,16 +196,6 @@ const chatSlice = createSlice({
         const message = messages.find((m) => m.id === messageId);
         if (message) {
           message.feedback = rating;
-        }
-      }
-    },
-    updateMessageContent: (state, action) => {
-      const { sessionId, messageId, content } = action.payload;
-      const messages = state.messages[sessionId];
-      if (messages) {
-        const message = messages.find((m) => m.id === messageId);
-        if (message) {
-          message.content = content;
         }
       }
     },
@@ -403,8 +330,6 @@ export const {
   resetLanguageSettings,
   setMessageInputHeight,
   updateMessageRating,
-  updateMessageContent,
   updateActiveSessionData,
-  updateStreamingMessageTTS,
 } = chatSlice.actions;
 export default chatSlice.reducer;

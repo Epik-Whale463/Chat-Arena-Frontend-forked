@@ -9,7 +9,7 @@ import { fetchModelsTTS } from '../../models/store/modelsSlice';
 export function ModelSelector({ variant = 'full' }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { activeSession, selectedMode, selectedModels } = useSelector((state) => state.chat);
+  const { activeSession, selectedMode, selectedModels } = useSelector((state) => state.ttsChat);
 
   const { models, loading } = useSelector((state) => state.models);
 

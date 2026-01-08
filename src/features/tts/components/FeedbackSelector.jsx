@@ -23,7 +23,7 @@ const Button = ({ children, onClick, onMouseEnter, className = '', ariaLabel }) 
 
 export function FeedbackSelector({ onSelect, onHover }) {
 
-  const messageInputHeight = useSelector((state) => state.chat.messageInputHeight);    
+  const messageInputHeight = useSelector((state) => state.ttsChat.messageInputHeight);    
 
   return (
     <motion.div
