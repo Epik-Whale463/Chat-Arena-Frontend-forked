@@ -1,4 +1,4 @@
-import { User, Bot, Copy, RefreshCw, Expand, Check, AlertTriangle, ThumbsUp, ThumbsDown, FileText } from 'lucide-react';
+import { User, Bot, Copy, RefreshCw, Expand, Check, AlertTriangle, ThumbsUp, ThumbsDown, FileText, Volume2 } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
@@ -237,6 +237,22 @@ export function MessageItem({
                 <span className="text-sm text-white font-medium truncate max-w-[200px]">
                   Attached Document
                 </span>
+              </div>
+            )}
+            {/* Display uploaded audio if present */}
+            {(message.temp_audio_url || message.audio_path) && (
+              <div className="mb-2 p-2 bg-white/15 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Volume2 size={14} className="text-white/80" />
+                  <span className="text-xs text-white/80">Audio</span>
+                </div>
+                <audio 
+                  controls 
+                  className="w-full h-8"
+                  src={message.temp_audio_url || message.audio_path}
+                >
+                  Your browser does not support audio playback.
+                </audio>
               </div>
             )}
             <p className="whitespace-pre-wrap">{message.content}</p>
