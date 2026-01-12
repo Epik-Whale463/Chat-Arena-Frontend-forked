@@ -3,6 +3,7 @@ export const endpoints = {
     // Auth endpoints
     auth: {
       google: '/auth/google/',
+      phone: '/auth/phone/',
       anonymous: '/auth/anonymous/',
       refresh: '/auth/refresh/',
       currentUser: '/users/me/',

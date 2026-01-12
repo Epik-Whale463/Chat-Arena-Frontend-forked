@@ -43,6 +43,40 @@ export const loginWithGoogle = createAsyncThunk(
   }
 );
 
+export const loginWithPhone = createAsyncThunk(
+  'auth/loginWithPhone',
+  async ({ idToken, displayName }, { rejectWithValue, dispatch }) => {
+    try {
+      // Get anonymous token if exists
+      const anonymousToken = localStorage.getItem('anonymous_token');
+
+      // Set anonymous token in header if exists for merging
+      if (anonymousToken) {
+        apiClient.defaults.headers['X-Anonymous-Token'] = anonymousToken;
+      }
+
+      const response = await apiClient.post(endpoints.auth.phone, {
+        id_token: idToken,
+        display_name: displayName
+      });
+
+      // Store JWT tokens
+      userService.storeTokens(response.data.tokens);
+
+      // Clean up anonymous token after successful merge
+      if (anonymousToken) {
+        localStorage.removeItem('anonymous_token');
+        delete apiClient.defaults.headers['X-Anonymous-Token'];
+      }
+
+      return response.data;
+    } catch (error) {
+      handleApiError(error, dispatch);
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 export const loginAnonymously = createAsyncThunk(
   'auth/loginAnonymously',
   async (displayName, { rejectWithValue, dispatch }) => {
@@ -174,6 +208,24 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(loginWithGoogle.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || action.error.message;
+      });
+
+    // Phone login
+    builder
+      .addCase(loginWithPhone.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(loginWithPhone.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.user;
+        state.isAuthenticated = true;
+        state.isAnonymous = false;
+        state.error = null;
+      })
+      .addCase(loginWithPhone.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || action.error.message;
       });
