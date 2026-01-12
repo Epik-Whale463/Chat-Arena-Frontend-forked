@@ -1,12 +1,16 @@
 import { useCallback } from 'react';
 import { useDispatch } from 'react-redux';
+import { useParams } from 'react-router-dom';
 import { apiClient } from '../../../shared/api/client';
 import { endpoints } from '../../../shared/api/endpoints';
 import { addMessage, updateStreamingMessage, updateSessionTitle, removeMessage, setIsRegenerating } from '../store/chatSlice';
 import { v4 as uuidv4 } from 'uuid';
+import { useTenant } from '../../../shared/context/TenantContext';
 
 export function useStreamingMessage() {
   const dispatch = useDispatch();
+  const { tenant: urlTenant } = useParams();
+  const { tenant: contextTenant } = useTenant();
 
   const generateAndUpdateTitle = useCallback(async (sessionId) => {
     try {
@@ -28,7 +32,14 @@ export function useStreamingMessage() {
     sessionId,
     content,
     modelId,
-    parent_message_ids = []
+    parent_message_ids = [],
+    language = null,
+    imageUrl = null,
+    imagePath = null,
+    audioUrl = null,
+    audioPath = null,
+    docUrl = null,
+    docPath = null
   }) => {
     const userMessageId = uuidv4();
     const aiMessageId = uuidv4();
@@ -40,6 +51,13 @@ export function useStreamingMessage() {
       content,
       parent_message_ids,
       status: 'pending',
+      ...(language && { language }),
+      ...(imageUrl && { temp_image_url: imageUrl }),
+      ...(imagePath && { image_path: imagePath }),
+      ...(audioUrl && { temp_audio_url: audioUrl }),
+      ...(audioPath && { audio_path: audioPath }),
+      ...(docUrl && { temp_doc_url: docUrl }),
+      ...(docPath && { doc_path: docPath }),
     };
 
     // Add AI message placeholder
@@ -58,12 +76,27 @@ export function useStreamingMessage() {
     // dispatch(addMessage({ sessionId, message: aiMessage }));
 
     try {
-      const response = await fetch(`${apiClient.defaults.baseURL}${endpoints.messages.stream}`, {
+      // Get fresh tenant value at call time (not from closure)
+      const tenant = urlTenant || contextTenant;
+      const baseUrl = tenant ? `${apiClient.defaults.baseURL}/${tenant}` : apiClient.defaults.baseURL;
+      const url = `${baseUrl}${endpoints.messages.stream}`;
+
+      // Get appropriate token
+      const token = localStorage.getItem('access_token');
+      const anonymousToken = localStorage.getItem('anonymous_token');
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      } else if (anonymousToken) {
+        headers['X-Anonymous-Token'] = anonymousToken;
+      }
+
+      const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-        },
+        headers,
         body: JSON.stringify({
           session_id: sessionId,
           messages: [userMessage, aiMessage],
@@ -145,6 +178,7 @@ export function useStreamingMessage() {
           }
         }
       }
+
     } catch (error) {
       console.error('Streaming error:', error);
       dispatch(updateStreamingMessage({
@@ -156,7 +190,7 @@ export function useStreamingMessage() {
       }));
       // throw error;
     }
-  }, [dispatch, generateAndUpdateTitle]);
+  }, [dispatch, generateAndUpdateTitle, urlTenant, contextTenant]);
 
   const regenerateMessage = useCallback(async ({
     sessionId,
@@ -183,14 +217,29 @@ export function useStreamingMessage() {
     }));
 
     try {
+      // Get fresh tenant value at call time (not from closure)
+      const tenant = urlTenant || contextTenant;
+      const baseUrl = tenant ? `${apiClient.defaults.baseURL}/${tenant}` : apiClient.defaults.baseURL;
+      const url = `${baseUrl}/messages/${aiMessageId}/regenerate/`;
+
+      // Get appropriate token
+      const token = localStorage.getItem('access_token');
+      const anonymousToken = localStorage.getItem('anonymous_token');
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      } else if (anonymousToken) {
+        headers['X-Anonymous-Token'] = anonymousToken;
+      }
+
       const response = await fetch(
-        `${apiClient.defaults.baseURL}/messages/${aiMessageId}/regenerate/`,
+        url,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          },
+          headers,
         }
       );
 
@@ -245,9 +294,7 @@ export function useStreamingMessage() {
               }));
               bufferA = '';
             }
-            console.log('Regeneration done line:', line.slice(3));
             const data = JSON.parse(line.slice(3));
-            console.log('Regeneration done data:', data);
             if (data.finishReason === 'error') {
               dispatch(updateStreamingMessage({
                 sessionId,
@@ -285,7 +332,7 @@ export function useStreamingMessage() {
     } finally {
       dispatch(setIsRegenerating(false));
     }
-  }, [dispatch]);
+  }, [dispatch, urlTenant, contextTenant]);
 
   return { streamMessage, regenerateMessage };
 }

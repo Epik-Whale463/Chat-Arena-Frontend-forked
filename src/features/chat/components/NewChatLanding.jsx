@@ -6,6 +6,8 @@ import GeminiIcon from '../../../shared/icons/GeminiIcon';
 import LlamaIcon from '../../../shared/icons/LlamaIcon';
 import QwenIcon from '../../../shared/icons/QwenIcon';
 import IbmIcon from '../../../shared/icons/IbmIcon';
+import SarvamIcon from '../../../shared/icons/SarvamIcon';
+import AI4Bicon from '../../../shared/icons/AI4Bicon';
 
 const ProviderIcon = ({ icon: Icon, className = 'h-6 w-6' }) => (
   <div className={`flex items-center justify-center text-orange-500/80 ${className}`}>
@@ -13,18 +15,19 @@ const ProviderIcon = ({ icon: Icon, className = 'h-6 w-6' }) => (
   </div>
 );
 
-export function NewChatLanding() {
+export function NewChatLanding({ isInputActive = false }) {
   return (
     <div className="flex flex-col items-center text-center p-4 mb-8" data-tour="hero">
       <div className="flex items-center space-x-4 mb-6">
         <ProviderIcon icon={OpenAiIcon} />
         {/* <ProviderIcon icon={ClaudeIcon} /> */}
         <ProviderIcon icon={QwenIcon} />
-        {/* <ProviderIcon icon={Bot} /> */}
+        <ProviderIcon icon={AI4Bicon} className='h-7 w-7' />
         {/* <ProviderIcon icon={DeepseekIcon} /> */}
         <ProviderIcon icon={GeminiIcon} />
-        <ProviderIcon icon={LlamaIcon} className='h-7 w-7'/>
-        <ProviderIcon icon={IbmIcon} className='h-11 w-11'/>
+        <ProviderIcon icon={LlamaIcon} className='h-7 w-7' />
+        <ProviderIcon icon={IbmIcon} className='h-11 w-11' />
+        <ProviderIcon icon={SarvamIcon} className='h-6 w-6' />
       </div>
 
       <h1 className="text-3xl md:text-5xl font-bold text-slate-800 tracking-tight">

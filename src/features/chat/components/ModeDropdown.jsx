@@ -22,13 +22,20 @@ export function ModeDropdown({ currentMode, onModeChange }) {
   const wrapperRef = useRef(null);
   useOutsideAlerter(wrapperRef, () => setIsOpen(false));
 
-  const CurrentIcon = MODES[currentMode].icon;
+  const validMode = MODES[currentMode] ? currentMode : 'random';
+  const CurrentIcon = MODES[validMode].icon;
+
+  useEffect(() => {
+    if (!MODES[currentMode]) {
+      onModeChange('random');
+    }
+  }, [currentMode, onModeChange]);
 
   return (
     <div className="relative" ref={wrapperRef} data-tour="mode-selector">
       <button onClick={() => setIsOpen(!isOpen)} className="flex items-center gap-2 text-base font-medium text-gray-700 hover:bg-gray-100 p-2 rounded-md">
         <CurrentIcon size={18} />
-        <span>{MODES[currentMode].label}</span>
+        <span>{MODES[validMode].label}</span>
         <ChevronDown size={16} className={`text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
@@ -40,7 +47,7 @@ export function ModeDropdown({ currentMode, onModeChange }) {
                      left-1/2 -translate-x-1/2 sm:left-0 sm:translate-x-0"
         >
           {Object.entries(MODES).map(([key, { icon: Icon, label, description }]) => {
-            const isSelected = currentMode === key;
+            const isSelected = validMode === key;
             return (
               <button
                 key={key}
