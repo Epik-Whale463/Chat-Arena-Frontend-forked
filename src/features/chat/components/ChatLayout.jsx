@@ -8,9 +8,11 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { AuthPromptBanner } from '../../auth/components/AuthPromptBanner';
 import { fetchSessionById, setActiveSession, clearMessages, resetLanguageSettings } from '../store/chatSlice';
 import { PanelLeftOpen, Plus } from 'lucide-react';
-import { LeaderboardFilters } from './LeaderboardFilters';
+import { LeaderboardFilters } from '../../leaderboard/components/LeaderboardFilters';
 import { LeaderboardContent } from './LeaderboardContent';
 import { useTenant } from '../../../shared/context/TenantContext';
+import { Grid3x3, FileText } from 'lucide-react';
+import { Walkthrough } from './Walkthrough';
 
 
 export function ChatLayout() {
@@ -21,12 +23,19 @@ export function ChatLayout() {
   const { activeSession } = useSelector((state) => state.chat);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { tenant: contextTenant } = useTenant();
-  
-  // Use URL tenant or context tenant
-  const currentTenant = urlTenant || contextTenant;
 
-  // Check if we're on a leaderboard route
-  const isLeaderboardRoute = location.pathname.startsWith('/leaderboard/chat');
+  // Use URL tenant or context tenant
+  let currentTenant = urlTenant || contextTenant;
+  if (currentTenant === 'leaderboard') currentTenant = null;
+
+  // Check if we're on a leaderboard route (with or without tenant prefix)
+  const isLeaderboardRoute = location.pathname.includes('/leaderboard');
+
+  const filters = [
+      { name: 'Overview', suffix: 'overview', icon: Grid3x3 },
+      { name: 'Text', suffix: 'text', icon: FileText },
+      { name: 'Top Contributors', suffix: 'contributors', icon: null }, // Or add an icon like Users or Award
+  ];
 
   useEffect(() => {
     const applyResponsiveSidebar = () => {
@@ -65,8 +74,11 @@ export function ChatLayout() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
+      {/* Walkthrough Tutorial */}
+      <Walkthrough />
+      
       {/* Auth Prompt Banner */}
-      <AuthPromptBanner session_type="LLM"/>
+      <AuthPromptBanner session_type="LLM" />
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
@@ -87,7 +99,10 @@ export function ChatLayout() {
                   >
                     <PanelLeftOpen size={20} />
                   </button>
-                  <LeaderboardFilters />
+                  <LeaderboardFilters 
+                    basePath={currentTenant ? `/${currentTenant}/leaderboard/chat` : "/leaderboard/chat"}
+                    availableFilters={filters}
+                  />
                 </div>
               </div>
             ) : (

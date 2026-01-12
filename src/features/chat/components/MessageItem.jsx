@@ -1,4 +1,4 @@
-import { User, Bot, Copy, RefreshCw, Expand, Check, AlertTriangle, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { User, Bot, Copy, RefreshCw, Expand, Check, AlertTriangle, ThumbsUp, ThumbsDown, FileText, Volume2 } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import ReactMarkdown from 'react-markdown';
@@ -13,23 +13,45 @@ import { useDispatch } from 'react-redux';
 import { updateMessageRating } from '../store/chatSlice';
 
 function InlineErrorIndicator({ error, onRegenerate, canRegenerate }) {
+  const [showDetails, setShowDetails] = useState(false);
+  
   return (
-    <div className="not-prose mt-4 p-3 bg-red-50 border border-red-200 rounded-md flex flex-col sm:flex-row items-center gap-3 text-left">
-      <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0" />
-      <div className="flex-grow">
-        <p className="text-sm font-semibold text-red-800">Generation Failed</p>
-        <p className="text-xs text-red-700 mt-1 break-words">
-          {error || 'An unexpected error occurred.'}
-        </p>
+    <div className="not-prose mt-4 p-4 sm:p-5 bg-gradient-to-r from-orange-50 via-orange-50 to-yellow-50 border border-orange-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+        <div className="flex-shrink-0 mt-0.5">
+          <AlertTriangle className="w-5 h-5 text-orange-500" />
+        </div>
+        
+        <div className="flex-grow min-w-0">
+          <p className="text-sm font-semibold text-orange-900">Generation failed</p>
+          <p className="text-sm text-orange-800 mt-1">This model landed into an issue.</p>
+          
+          {error && error !== 'An unexpected error occurred.' && (
+            <button
+              onClick={() => setShowDetails(!showDetails)}
+              className="mt-2 text-xs text-orange-700 hover:text-orange-900 underline font-medium"
+            >
+              {showDetails ? 'Hide details' : 'View details'}
+            </button>
+          )}
+          
+          {showDetails && error && (
+            <div className="mt-3 p-2 bg-white bg-opacity-60 rounded border border-orange-200 text-xs text-gray-600 font-mono break-words max-h-24 overflow-y-auto">
+              {error}
+            </div>
+          )}
+        </div>
+        
+        {canRegenerate && (
+          <button
+            onClick={onRegenerate}
+            className="mt-3 sm:mt-0 flex-shrink-0 w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white rounded-lg font-medium text-sm transition-colors duration-200 shadow-sm hover:shadow-md"
+          >
+            <RefreshCw size={16} />
+            Try Again
+          </button>
+        )}
       </div>
-      {canRegenerate &&
-        <button
-          onClick={onRegenerate}
-          className="mt-2 sm:mt-0 flex-shrink-0 inline-flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded-md shadow-sm text-xs font-medium text-gray-700 hover:bg-gray-50"
-        >
-          <RefreshCw size={14} />
-          Try Again
-        </button>}
     </div>
   );
 }
@@ -130,9 +152,9 @@ export function MessageItem({
 
       setLocalFeedback(newFeedback);
 
-      dispatch(updateMessageRating({ 
-        sessionId: sessionId, 
-        messageId: message.id, 
+      dispatch(updateMessageRating({
+        sessionId: sessionId,
+        messageId: message.id,
         rating: newFeedback,
       }));
 
@@ -198,6 +220,41 @@ export function MessageItem({
       <div className="flex justify-end mb-4">
         <div className="group flex items-start gap-3 justify-end">
           <div className="bg-orange-500 text-white px-3 py-2 rounded-lg max-w-2xl">
+            {/* Display uploaded image if present */}
+            {(message.temp_image_url || message.image_path) && (
+              <div className="mb-2">
+                <img
+                  src={message.temp_image_url || message.image_path}
+                  alt="Uploaded"
+                  className="max-w-full h-auto rounded max-h-40 object-contain"
+                />
+              </div>
+            )}
+            {/* Display uploaded document if present */}
+            {(message.temp_doc_url || message.doc_path) && (
+              <div className="mb-2 p-2 bg-white/20 rounded-md flex items-center gap-2">
+                <FileText size={20} className="text-white" />
+                <span className="text-sm text-white font-medium truncate max-w-[200px]">
+                  Attached Document
+                </span>
+              </div>
+            )}
+            {/* Display uploaded audio if present */}
+            {(message.temp_audio_url || message.audio_path) && (
+              <div className="mb-2 p-2 bg-white/15 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Volume2 size={14} className="text-white/80" />
+                  <span className="text-xs text-white/80">Audio</span>
+                </div>
+                <audio 
+                  controls 
+                  className="w-full h-8"
+                  src={message.temp_audio_url || message.audio_path}
+                >
+                  Your browser does not support audio playback.
+                </audio>
+              </div>
+            )}
             <p className="whitespace-pre-wrap">{message.content}</p>
           </div>
         </div>
@@ -311,7 +368,7 @@ export function MessageItem({
         <div className="prose prose-sm max-w-none text-gray-900">
           {message.isStreaming &&
             (!message.content || message.content.trim().length === 0) &&
-            !isThinkingModelRef.current && ((modelName !== "GPT 5" && modelName !== "GPT 5 Pro" && modelName !== "Gemini 2.5 Pro" && modelName !== "Gemini 3 Pro")?
+            !isThinkingModelRef.current && ((modelName !== "GPT 5" && modelName !== "GPT 5 Pro" && modelName !== "Gemini 2.5 Pro" && modelName !== "Gemini 3 Pro") ?
               <span className="inline-block w-2 h-4 bg-gray-400 animate-pulse ml-1 rounded-sm" /> :
               <span className="text-xs text-gray-600 font-normal italic animate-pulse">
                 Thinking...

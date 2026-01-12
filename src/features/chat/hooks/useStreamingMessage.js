@@ -32,7 +32,14 @@ export function useStreamingMessage() {
     sessionId,
     content,
     modelId,
-    parent_message_ids = []
+    parent_message_ids = [],
+    language = null,
+    imageUrl = null,
+    imagePath = null,
+    audioUrl = null,
+    audioPath = null,
+    docUrl = null,
+    docPath = null
   }) => {
     const userMessageId = uuidv4();
     const aiMessageId = uuidv4();
@@ -44,6 +51,13 @@ export function useStreamingMessage() {
       content,
       parent_message_ids,
       status: 'pending',
+      ...(language && { language }),
+      ...(imageUrl && { temp_image_url: imageUrl }),
+      ...(imagePath && { image_path: imagePath }),
+      ...(audioUrl && { temp_audio_url: audioUrl }),
+      ...(audioPath && { audio_path: audioPath }),
+      ...(docUrl && { temp_doc_url: docUrl }),
+      ...(docPath && { doc_path: docPath }),
     };
 
     // Add AI message placeholder

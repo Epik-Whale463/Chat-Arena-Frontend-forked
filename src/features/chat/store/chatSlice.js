@@ -4,12 +4,13 @@ import { endpoints } from '../../../shared/api/endpoints';
 
 export const createSession = createAsyncThunk(
   'chat/createSession',
-  async ({ mode, modelA, modelB, type }) => {
+  async ({ mode, modelA, modelB, type, metadata }) => {
     const response = await apiClient.post(endpoints.sessions.create, {
       mode,
       model_a_id: modelA,
       model_b_id: modelB,
       session_type: type,
+      metadata: metadata || {}
     });
     return response.data;
   }
@@ -75,12 +76,17 @@ const chatSlice = createSlice({
     },
     isRegenerating: false,
     selectedLanguage: localStorage.getItem('selected_language') || 'hi',
+    isStreaming: false,
     isTranslateEnabled: false,
     messageInputHeight: 104,
   },
   reducers: {
     setActiveSession: (state, action) => {
       state.activeSession = action.payload;
+      state.isStreaming = false; // Reset streaming state on session switch
+    },
+    setIsStreaming: (state, action) => {
+      state.isStreaming = action.payload;
     },
     addMessage: (state, action) => {
       const { sessionId, message } = action.payload;
@@ -325,6 +331,7 @@ export const {
   updateSessionTitle,
   removeMessage,
   setIsRegenerating,
+  setIsStreaming,
   setSelectedLanguage,
   setIsTranslateEnabled,
   resetLanguageSettings,

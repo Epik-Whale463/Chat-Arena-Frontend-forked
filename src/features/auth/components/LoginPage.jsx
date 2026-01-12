@@ -1,23 +1,31 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider } from '../../../config/firebase';
 import { loginWithGoogle, loginWithPhone, loginAnonymously } from '../store/authSlice';
 import { toast } from 'react-hot-toast';
 import { PhoneAuth } from './PhoneAuth';
+import { useTenant } from '../../../shared/context/TenantContext';
 
 export function LoginPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { tenant: urlTenant } = useParams();
+  const { tenant: contextTenant } = useTenant();
+  const currentTenant = urlTenant || contextTenant;
   const { isAuthenticated, loading, error } = useSelector((state) => state.auth);
   const [showPhoneAuth, setShowPhoneAuth] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/chat');
+      if (currentTenant) {
+        navigate(`/${currentTenant}/chat`);
+      } else {
+        navigate('/chat');
+      }
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, currentTenant]);
 
   useEffect(() => {
     if (error) {

@@ -1,22 +1,26 @@
 import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
 import { setSelectedMode, setSelectedModels, setActiveSession, resetLanguageSettings, setSelectedLanguage } from '../store/chatSlice';
+import { getAvailableLanguages, getValidLanguage } from '../utils/languageUtils';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ModeDropdown } from './ModeDropdown';
 import { ModelDropdown } from './ModelDropdown';
 import { fetchModelsTTS } from '../../models/store/modelsSlice';
-import { getAvailableLanguages, getValidLanguage } from '../utils/languageUtils';
+import { useTenant } from '../../../shared/context/TenantContext';
 
 export function ModelSelector({ variant = 'full' }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { tenant: urlTenant } = useParams();
+  const { tenant: contextTenant } = useTenant();
+  const currentTenant = urlTenant || contextTenant;
   const { activeSession, selectedMode, selectedModels, selectedLanguage } = useSelector((state) => state.ttsChat);
 
   const { models, loading } = useSelector((state) => state.models);
 
   useEffect(() => {
-    dispatch(fetchModelsTTS());
-  }, [dispatch]);
+    dispatch(fetchModelsTTS(currentTenant));
+  }, [dispatch, currentTenant]);
 
   const mode = activeSession?.mode || selectedMode || 'random';
   const modelsInUse = {
@@ -33,7 +37,7 @@ export function ModelSelector({ variant = 'full' }) {
         currentSelections.modelA = null;
         needsUpdate = true;
       }
-  
+
       if (currentSelections.modelB && !models.some((m) => m.id === currentSelections.modelB)) {
         currentSelections.modelB = null;
         needsUpdate = true;
@@ -70,7 +74,11 @@ export function ModelSelector({ variant = 'full' }) {
     if (activeSession && activeSession.mode !== newMode) {
       dispatch(setActiveSession(null));
       dispatch(resetLanguageSettings());
-      navigate('/tts');
+      if (currentTenant) {
+        navigate(`/${currentTenant}/tts`);
+      } else {
+        navigate('/tts');
+      }
     }
   };
 
@@ -83,7 +91,7 @@ export function ModelSelector({ variant = 'full' }) {
     );
 
     if (slot === 'modelA' && mode === 'compare' && model.id === newModels.modelB) {
-        newModels.modelB = models.find(m => m.id !== model.id)?.id || null;
+      newModels.modelB = models.find(m => m.id !== model.id)?.id || null;
     }
     newModels[slot] = model.id;
     dispatch(setSelectedModels(newModels));
@@ -105,7 +113,11 @@ export function ModelSelector({ variant = 'full' }) {
       dispatch(setSelectedMode(currentMode));
       dispatch(setActiveSession(null));
       dispatch(resetLanguageSettings());
-      navigate('/tts');
+      if (currentTenant) {
+        navigate(`/${currentTenant}/tts`);
+      } else {
+        navigate('/tts');
+      }
     }
   };
 

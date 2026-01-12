@@ -15,32 +15,20 @@ import {
   LogOut,
   User,
   LogIn,
-  Clock,
   BotMessageSquare,
   PanelLeftOpen,
   PanelLeftClose,
   Trophy,
   Grid2x2,
   ScrollText,
-  AppWindow,
-  Eye,
-  Image,
-  WandSparkles,
-  Globe,
-  Video,
-  CodeXml,
   Shuffle,
   Pin,
-  Trash2,
   Edit2,
-  Share2,
-  FileText,
-  FileJson,
+  Ellipsis,
   Download,
   ChevronRight,
-  Ellipsis,
-  EllipsisVertical,
-  FileSpreadsheet
+  FileSpreadsheet,
+  FileJson,
 } from 'lucide-react';
 import { AuthModal } from '../../auth/components/AuthModal';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -48,20 +36,18 @@ import { groupSessionsByDate } from '../utils/dateUtils';
 import { SidebarItem } from './SidebarItem';
 import { ProviderIcons } from '../../../shared/icons';
 import { useTenant } from '../../../shared/context/TenantContext';
-
-import { RenameSessionModal } from "./RenameSessionModal";
-import { apiClient } from "../../../shared/api/client";
+import { RenameSessionModal } from "../../chat/components/RenameSessionModal";
 import { DropdownPortal } from "../../../shared/components/DropdownPortal";
-
+import { apiClient } from '../../../shared/api/client';
 
 
 const SessionItem = ({ session, isActive, onClick, onPin, onRename }) => {
   const [showMenu, setShowMenu] = useState(false);
-  const [showExportMenu, setShowExportMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(session.title || "");
-  
+  const [showExportMenu, setShowExportMenu] = useState(false);
+
   const menuRef = useRef(null);
   const buttonRef = useRef(null);
   const inputRef = useRef(null);
@@ -84,9 +70,9 @@ const SessionItem = ({ session, isActive, onClick, onPin, onRename }) => {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
-        menuRef.current && 
+        menuRef.current &&
         !menuRef.current.contains(event.target) &&
-        buttonRef.current && 
+        buttonRef.current &&
         !buttonRef.current.contains(event.target)
       ) {
         setShowMenu(false);
@@ -96,8 +82,8 @@ const SessionItem = ({ session, isActive, onClick, onPin, onRename }) => {
 
     const handleScroll = () => {
       if (showMenu) {
-         setShowMenu(false);
-         setShowExportMenu(false);
+        setShowMenu(false);
+        setShowExportMenu(false);
       }
     };
 
@@ -114,41 +100,41 @@ const SessionItem = ({ session, isActive, onClick, onPin, onRename }) => {
 
 
   const calculateMenuPosition = (rect, isMobile) => {
-    const MENU_WIDTH = 192; 
-    const MENU_HEIGHT = 200;
+    const MENU_WIDTH = 192;
+    const MENU_HEIGHT = 100;
     const SCREEN_WIDTH = window.innerWidth;
     const SCREEN_HEIGHT = window.innerHeight;
 
     let left, top;
 
     if (isMobile) {
-        left = rect.left + (rect.width / 2) - (MENU_WIDTH / 2);
-        top = rect.bottom + 5;
+      left = rect.left + (rect.width / 2) - (MENU_WIDTH / 2);
+      top = rect.bottom + 5;
     } else {
-        left = rect.right + 5;
-        top = rect.top;
+      left = rect.right + 5;
+      top = rect.top;
     }
 
     if (left + MENU_WIDTH > SCREEN_WIDTH) {
-        left = SCREEN_WIDTH - MENU_WIDTH - 10;
+      left = SCREEN_WIDTH - MENU_WIDTH - 10;
     }
     if (left < 10) {
-        left = 10;
+      left = 10;
     }
 
     if (top + MENU_HEIGHT > SCREEN_HEIGHT) {
-        top = rect.top - MENU_HEIGHT; 
-        if (top < 10) top = 10;
+      top = rect.top - MENU_HEIGHT;
+      if (top < 10) top = 10;
     }
 
     return { top, left };
   };
 
   const handleMenuOpen = (rect) => {
-      const isMobile = window.innerWidth < 768;
-      const position = calculateMenuPosition(rect, isMobile);
-      setMenuPosition(position);
-      setShowMenu(true);
+    const isMobile = window.innerWidth < 768;
+    const position = calculateMenuPosition(rect, isMobile);
+    setMenuPosition(position);
+    setShowMenu(true);
   };
 
   const handleMenuClick = (e) => {
@@ -157,72 +143,73 @@ const SessionItem = ({ session, isActive, onClick, onPin, onRename }) => {
       const rect = e.currentTarget.getBoundingClientRect();
       handleMenuOpen(rect);
     } else {
-        setShowMenu(false);
+      setShowMenu(false);
+      setShowExportMenu(false);
     }
   };
 
   const handleTouchStart = (e) => {
-      if (window.innerWidth >= 768) return; 
-      isLongPressRef.current = false;
-      longPressTimerRef.current = setTimeout(() => {
-          isLongPressRef.current = true;
-          if (itemRef.current) {
-               const rect = itemRef.current.getBoundingClientRect();
-               handleMenuOpen(rect);
-               if (navigator.vibrate) navigator.vibrate(50);
-          }
-      }, 500); 
+    if (window.innerWidth >= 768) return;
+    isLongPressRef.current = false;
+    longPressTimerRef.current = setTimeout(() => {
+      isLongPressRef.current = true;
+      if (itemRef.current) {
+        const rect = itemRef.current.getBoundingClientRect();
+        handleMenuOpen(rect);
+        if (navigator.vibrate) navigator.vibrate(50);
+      }
+    }, 500);
   };
 
   const handleTouchEnd = (e) => {
-       if (longPressTimerRef.current) {
-           clearTimeout(longPressTimerRef.current);
-       }
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+    }
   };
 
   const handleTouchMove = () => {
-      if (longPressTimerRef.current) {
-          clearTimeout(longPressTimerRef.current);
-      }
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+    }
   };
 
   const handleItemClick = (e) => {
-      if (isRenaming) return;
-      
-      if (isLongPressRef.current) {
-          isLongPressRef.current = false;
-          return;
-      }
-      
-      onClick();
+    if (isRenaming) return;
+
+    if (isLongPressRef.current) {
+      isLongPressRef.current = false;
+      return;
+    }
+
+    onClick();
   };
-  
+
   const handleStartRename = (e) => {
-     e.stopPropagation();
-     setShowMenu(false);
-     
-     if (window.innerWidth < 768) {
-       onRename(session);
-     } else {
-       setIsRenaming(true);
-     }
+    e.stopPropagation();
+    setShowMenu(false);
+
+    if (window.innerWidth < 768) {
+      onRename(session);
+    } else {
+      setIsRenaming(true);
+    }
   };
 
   const saveRename = async () => {
-      if (!renameValue.trim() || renameValue === session.title) {
-        setIsRenaming(false);
-        setRenameValue(session.title || "");
-        return;
-      }
-      
-      try {
-        await dispatch(renameSession({ sessionId: session.id, title: renameValue }));
-        setIsRenaming(false);
-      } catch (error) {
-        console.error("Failed to rename", error);
-        setRenameValue(session.title || "");
-        setIsRenaming(false);
-      }
+    if (!renameValue.trim() || renameValue === session.title) {
+      setIsRenaming(false);
+      setRenameValue(session.title || "");
+      return;
+    }
+
+    try {
+      await dispatch(renameSession({ sessionId: session.id, title: renameValue }));
+      setIsRenaming(false);
+    } catch (error) {
+      console.error("Failed to rename", error);
+      setRenameValue(session.title || "");
+      setIsRenaming(false);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -263,6 +250,7 @@ const SessionItem = ({ session, isActive, onClick, onPin, onRename }) => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       setShowMenu(false);
+      setShowExportMenu(false);
 
     } catch (error) {
       console.error("Error exporting JSON:", error);
@@ -338,7 +326,7 @@ const SessionItem = ({ session, isActive, onClick, onPin, onRename }) => {
 
       const link = document.createElement("a");
       link.href = url;
-      link.download = `chat_export_${session.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`;
+      link.download = `chat_export_${(session.title || 'chat').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`;
 
       document.body.appendChild(link);
       link.click();
@@ -346,6 +334,7 @@ const SessionItem = ({ session, isActive, onClick, onPin, onRename }) => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       setShowMenu(false);
+      setShowExportMenu(false);
 
     } catch (error) {
       console.error("Error exporting CSV:", error);
@@ -353,6 +342,7 @@ const SessionItem = ({ session, isActive, onClick, onPin, onRename }) => {
     }
   };
 
+  // Helper to get the icon for a provider
   const getProviderIcon = (provider) => {
     if (!provider) return null;
     const Icon = ProviderIcons[provider.toLowerCase()];
@@ -387,6 +377,7 @@ const SessionItem = ({ session, isActive, onClick, onPin, onRename }) => {
       const iconA = getProviderIcon(modelName_a);
       const iconB = getProviderIcon(modelName_b);
 
+
       const fallbackIcon = <MessageSquare size={10} className="text-gray-500" />;
 
       return (
@@ -415,9 +406,9 @@ const SessionItem = ({ session, isActive, onClick, onPin, onRename }) => {
       onTouchEnd={handleTouchEnd}
       onTouchMove={handleTouchMove}
       onContextMenu={(e) => {
-          if (window.innerWidth < 768) {
-             // e.preventDefault(); // Optional: depend on preference
-          }
+        if (window.innerWidth < 768) {
+          // e.preventDefault(); // Optional: depend on preference
+        }
       }}
     >
       <div
@@ -447,13 +438,13 @@ const SessionItem = ({ session, isActive, onClick, onPin, onRename }) => {
               autoFocus
             />
           ) : (
-             <div className={`truncate ${showMenu ? 'md:pr-4' : 'md:group-hover:pr-4'} transition-all duration-0`}>
+            <div className={`truncate ${showMenu ? 'md:pr-4' : 'md:group-hover:pr-4'} transition-all duration-0`}>
               {session.title || 'New Conversation'}
             </div>
           )}
         </div>
       </div>
-      
+
       {!isRenaming && (
         <button
           ref={buttonRef}
@@ -472,15 +463,15 @@ const SessionItem = ({ session, isActive, onClick, onPin, onRename }) => {
 
       {showMenu && (
         <DropdownPortal>
-             <div 
-                ref={menuRef}
-                style={{ 
-                    position: 'fixed', 
-                    top: menuPosition.top, 
-                    left: menuPosition.left,
-                }}
-                className="z-[9999] w-48 bg-white rounded-lg shadow-xl border border-gray-100 py-1 text-gray-700 animate-in fade-in zoom-in-95 duration-100 origin-top-left"
-            >
+          <div
+            ref={menuRef}
+            style={{
+              position: 'fixed',
+              top: menuPosition.top,
+              left: menuPosition.left,
+            }}
+            className="z-[9999] w-48 bg-white rounded-lg shadow-xl border border-gray-100 py-1 text-gray-700 animate-in fade-in zoom-in-95 duration-100 origin-top-left"
+          >
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -502,7 +493,7 @@ const SessionItem = ({ session, isActive, onClick, onPin, onRename }) => {
             >
               <Edit2 size={14} /> Rename
             </button>
-             <button
+            <button
               onClick={handleStartRename}
               className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex md:hidden items-center gap-2"
             >
@@ -513,8 +504,8 @@ const SessionItem = ({ session, isActive, onClick, onPin, onRename }) => {
               <button
                 className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center justify-between gap-2 text-gray-700"
                 onClick={(e) => {
-                    e.stopPropagation();
-                    setShowExportMenu(!showExportMenu);
+                  e.stopPropagation();
+                  setShowExportMenu(!showExportMenu);
                 }}
               >
                 <div className="flex items-center gap-2">
@@ -548,7 +539,8 @@ const SessionItem = ({ session, isActive, onClick, onPin, onRename }) => {
                 </button>
               </div>
             </div>
-           </div>
+
+          </div>
         </DropdownPortal>
       )}
     </div>
@@ -562,15 +554,17 @@ export function ChatSidebar({ isOpen, onToggle }) {
   const { sessions } = useSelector((state) => state.chat);
   const { user, isAnonymous } = useSelector((state) => state.auth);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isLeaderboardDropdownOpen, setIsLeaderboardDropdownOpen] = useState(false);
+  const { tenant: contextTenant } = useTenant();
 
-  const [isLeaderboardDropdownOpen, setIsLeaderboardDropdownOpen] =
-    useState(false);
   const [renameModalOpen, setRenameModalOpen] = useState(false);
   const [sessionToRename, setSessionToRename] = useState(null);
-  
-  const { tenant: contextTenant } = useTenant();
-  const currentTenant = urlTenant || contextTenant;
-  
+
+  // Use URL tenant or context tenant
+  let currentTenant = urlTenant || contextTenant;
+  if (currentTenant === 'leaderboard') currentTenant = null;
+
+
   const groupedSessions = useMemo(
     () => groupSessionsByDate(sessions),
     [sessions]
@@ -587,6 +581,52 @@ export function ChatSidebar({ isOpen, onToggle }) {
       groupedHistory: groupSessionsByDate(unpinned),
     };
   }, [sessions]);
+
+  useEffect(() => {
+    dispatch(fetchSessions());
+  }, [dispatch]);
+
+  const handleNewChat = () => {
+    dispatch(setActiveSession(null));
+    dispatch(clearMessages());
+    dispatch(resetLanguageSettings());
+    // Navigate with tenant prefix if available
+    if (currentTenant) {
+      navigate(`/${currentTenant}/chat`);
+    } else {
+      navigate('/chat');
+    }
+    // Auto-close sidebar on small screens after starting a new chat
+    if (typeof window !== 'undefined' && window.innerWidth < 768 && onToggle) {
+      onToggle();
+    }
+  };
+
+  const handleLeaderboard = () => {
+    if (currentTenant) {
+      navigate(`/${currentTenant}/leaderboard/chat/overview`);
+    } else {
+      navigate('/leaderboard/chat/overview');
+    }
+    // Auto-close sidebar on small screens after navigation
+    if (typeof window !== 'undefined' && window.innerWidth < 768 && onToggle) {
+      onToggle();
+    }
+  };
+
+
+  const handleSelectSession = (session) => {
+    // Navigate with tenant prefix if available
+    if (currentTenant) {
+      navigate(`/${currentTenant}/chat/${session.id}`);
+    } else {
+      navigate(`/chat/${session.id}`);
+    }
+    // Auto-close sidebar on small screens after selecting a session
+    if (typeof window !== 'undefined' && window.innerWidth < 768 && onToggle) {
+      onToggle();
+    }
+  };
 
   const handlePinSession = (session) => {
     dispatch(
@@ -611,48 +651,6 @@ export function ChatSidebar({ isOpen, onToggle }) {
     }
   };
 
-  useEffect(() => {
-    dispatch(fetchSessions());
-  }, [dispatch]);
-
-  const handleNewChat = () => {
-    dispatch(setActiveSession(null));
-    dispatch(clearMessages());
-    dispatch(resetLanguageSettings());
-    // Navigate with tenant prefix if available
-    if (currentTenant) {
-      navigate(`/${currentTenant}/chat`);
-    } else {
-      navigate('/chat');
-    }
-    // Auto-close sidebar on small screens after starting a new chat
-    if (typeof window !== 'undefined' && window.innerWidth < 768 && onToggle) {
-      onToggle();
-    }
-  };
-
-  const handleLeaderboard = () => {
-    navigate('/leaderboard/chat/overview');
-    // Auto-close sidebar on small screens after navigation
-    if (typeof window !== 'undefined' && window.innerWidth < 768 && onToggle) {
-      onToggle();
-    }
-  };
-
-
-  const handleSelectSession = (session) => {
-    // Navigate with tenant prefix if available
-    if (currentTenant) {
-      navigate(`/${currentTenant}/chat/${session.id}`);
-    } else {
-      navigate(`/chat/${session.id}`);
-    }
-    // Auto-close sidebar on small screens after selecting a session
-    if (typeof window !== 'undefined' && window.innerWidth < 768 && onToggle) {
-      onToggle();
-    }
-  };
-
   const handleLogout = () => {
     dispatch(logout());
     window.location.reload();
@@ -670,6 +668,7 @@ export function ChatSidebar({ isOpen, onToggle }) {
   return (
     <>
       <div
+        data-tour="sidebar"
         className={`bg-white border-r border-gray-200 flex flex-col h-full transition-all duration-300
           fixed inset-y-0 left-0 z-40 w-64 transform ${isOpen ? "translate-x-0" : "-translate-x-full"}
           md:relative md:z-auto md:transform-none ${isOpen ? "md:w-64" : "md:w-14"}`}
@@ -715,15 +714,10 @@ export function ChatSidebar({ isOpen, onToggle }) {
           </div>
 
           <div className="p-2">
-            <SidebarItem
-              icon={Plus}
-              text="New Chat"
-              isOpen={isOpen}
-              onClick={handleNewChat}
-              bordered={true}
-            />
+            <SidebarItem icon={Plus} text="New Chat" isOpen={isOpen} onClick={handleNewChat} bordered={true} />
             <div
               className="relative group"
+              data-tour="leaderboard-link"
               onMouseEnter={() => setIsLeaderboardDropdownOpen(true)}
               onMouseLeave={() => setIsLeaderboardDropdownOpen(false)}
             >
@@ -745,7 +739,11 @@ export function ChatSidebar({ isOpen, onToggle }) {
                 <div className="flex flex-col gap-1">
                   <button
                     onClick={() => {
-                      navigate('/leaderboard/chat/overview');
+                      if (currentTenant) {
+                        navigate(`/${currentTenant}/leaderboard/chat/overview`);
+                      } else {
+                        navigate('/leaderboard/chat/overview');
+                      }
                       setIsLeaderboardDropdownOpen(false);
                     }}
                     className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-100 rounded transition text-left w-full"
@@ -755,13 +753,31 @@ export function ChatSidebar({ isOpen, onToggle }) {
                   </button>
                   <button
                     onClick={() => {
-                      navigate('/leaderboard/chat/text');
+                      if (currentTenant) {
+                        navigate(`/${currentTenant}/leaderboard/chat/text`);
+                      } else {
+                        navigate('/leaderboard/chat/text');
+                      }
                       setIsLeaderboardDropdownOpen(false);
                     }}
                     className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-100 rounded transition text-left w-full"
                   >
                     <ScrollText size={18} />
                     <span className="text-sm">Text</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (currentTenant) {
+                        navigate(`/${currentTenant}/leaderboard/chat/contributors`);
+                      } else {
+                        navigate('/leaderboard/chat/contributors');
+                      }
+                      setIsLeaderboardDropdownOpen(false);
+                    }}
+                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-100 rounded transition text-left w-full"
+                  >
+                    <User size={18} />
+                    <span className="text-sm">Top Contributors</span>
                   </button>
                   {/* <button 
                         onClick={() => navigate('/leaderboard/webdev')}
@@ -848,27 +864,23 @@ export function ChatSidebar({ isOpen, onToggle }) {
                 </div>
               )}
 
-              {groupedHistory.length === 0 && pinnedSessions.length === 0 ? (
-                <></>
-              ) : (
-                groupedHistory.map((group) => (
-                  <div key={group.title} className="mb-4">
-                    <h3 className="text-xs font-semibold text-gray-400 uppercase px-2.5 mb-2">
-                      {group.title}
-                    </h3>
-                    {group.sessions.map((session) => (
-                      <SessionItem
-                        key={session.id}
-                        session={session}
-                        isActive={sessionId === session.id}
-                        onClick={() => handleSelectSession(session)}
-                        onPin={handlePinSession}
-                        onRename={handleRenameSession}
-                      />
-                    ))}
-                  </div>
-                ))
-              )}
+              {groupedHistory.map((group) => (
+                <div key={group.title} className="mb-4">
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase px-2.5 mb-2">
+                    {group.title}
+                  </h3>
+                  {group.sessions.map((session) => (
+                    <SessionItem
+                      key={session.id}
+                      session={session}
+                      isActive={sessionId === session.id}
+                      onClick={() => handleSelectSession(session)}
+                      onPin={handlePinSession}
+                      onRename={handleRenameSession}
+                    />
+                  ))}
+                </div>
+              ))}
             </>
           )}
         </div>
@@ -907,46 +919,19 @@ export function ChatSidebar({ isOpen, onToggle }) {
             </div>
           </div>
         </div>
-        <div
-          className={`
+        <div className={`
             justify-between items-center pt-2 text-xs text-gray-500 border-t border-gray-200 py-2 px-2
             transition-opacity duration-200
-            ${isOpen ? "flex opacity-100" : "hidden opacity-0"}
-          `}
-        >
-          <a
-            href="/#/terms"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-gray-800 hover:underline transition-colors"
-          >
-            Terms of Use
-          </a>
+            ${isOpen ? 'flex opacity-100' : 'hidden opacity-0'}
+          `}>
+          <a href="/#/terms" target="_blank" rel="noopener noreferrer" className="hover:text-gray-800 hover:underline transition-colors">Terms of Use</a>
           <span className="text-gray-300">|</span>
-          <a
-            href="/#/privacy"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-gray-800 hover:underline transition-colors"
-          >
-            Privacy Policy
-          </a>
+          <a href="/#/privacy" target="_blank" rel="noopener noreferrer" className="hover:text-gray-800 hover:underline transition-colors">Privacy Policy</a>
           <span className="text-gray-300">|</span>
-          <a
-            href="https://ai4bharat.iitm.ac.in"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-gray-800 hover:underline transition-colors"
-          >
-            About Us
-          </a>
+          <a href="https://ai4bharat.iitm.ac.in" target="_blank" rel="noopener noreferrer" className="hover:text-gray-800 hover:underline transition-colors">About Us</a>
         </div>
       </div>
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        session_type="LLM"
-      />
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} session_type="LLM" />
       <RenameSessionModal
         isOpen={renameModalOpen}
         onClose={() => setRenameModalOpen(false)}
