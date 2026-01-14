@@ -105,6 +105,9 @@ export function CompareView({ session, messages, streamingMessages, onRegenerate
       if (response.status >= 200 && response.status < 300) {
         setDetailedFeedbackSubmitted(true);
         toast.success('Detailed feedback submitted successfully');
+        if (response.data && response.data.session_update) {
+          dispatch(updateActiveSessionData(response.data.session_update));
+        }
         if (onDetailedFeedbackStatusChange) {
           onDetailedFeedbackStatusChange(true);
         }
