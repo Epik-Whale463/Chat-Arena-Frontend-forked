@@ -32,6 +32,10 @@ export function CompareView({ session, messages, streamingMessages, onRegenerate
     feedbackStateRef.current = feedbackState;
   }, [feedbackState]);
 
+  useEffect(() => {
+    setDetailedFeedbackSubmitted(false);
+  }, [session?.id]);
+
   const handleExpand = (message) => {
     setExpandedMessage(message);
   };
