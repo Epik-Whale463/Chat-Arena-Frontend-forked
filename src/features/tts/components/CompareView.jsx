@@ -33,8 +33,10 @@ export function CompareView({ session, messages, streamingMessages, onRegenerate
   }, [feedbackState]);
 
   useEffect(() => {
-    setDetailedFeedbackSubmitted(false);
-  }, [session?.id]);
+    const lastUserMessage = [...messages].reverse().find(msg => msg.role === 'user');
+    const hasExistingDetailedFeedback = lastUserMessage?.has_detailed_feedback || false;
+    setDetailedFeedbackSubmitted(hasExistingDetailedFeedback);
+  }, [session?.id, messages]);
 
   const handleExpand = (message) => {
     setExpandedMessage(message);
