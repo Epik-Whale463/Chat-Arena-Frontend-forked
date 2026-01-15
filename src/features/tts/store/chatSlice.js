@@ -69,7 +69,7 @@ const chatSlice = createSlice({
     streamingMessages: {},
     loading: false,
     error: null,
-    selectedMode: 'academic',
+    selectedMode: 'random',
     selectedModels: {
       modelA: null,
       modelB: null,
