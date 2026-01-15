@@ -64,10 +64,13 @@ export const getAvailableLanguages = (mode, models, modelAId, modelBId) => {
       return common;
     }
 
-    case 'random':
-    case 'academic': {
-      // For random/academic mode, use pre-computed common languages
+    case 'random':{
+      // For random mode, use pre-computed common languages
       return COMMON_LANGUAGES;
+    }
+
+    case 'academic': {
+      return ["hi"];
     }
 
     default:
