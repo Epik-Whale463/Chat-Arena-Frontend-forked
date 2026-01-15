@@ -342,9 +342,7 @@ const chatSlice = createSlice({
         if (!exists) {
           state.sessions.unshift(session);
         }
-        if (!state.messages[session.id]) {
-          state.messages[session.id] = messages;
-        }
+        state.messages[session.id] = messages;
       })
       .addCase(togglePinSession.pending, (state, action) => {
         const { sessionId, isPinned } = action.meta.arg;
