@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { Award, TrendingUp } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import { apiClient } from '../../../shared/api/client';
 import { endpoints } from '../../../shared/api/endpoints';
 
@@ -39,36 +39,23 @@ export function DetailedVotesCard() {
   }
 
   return (
-    <div className="fixed top-20 right-4 z-20 animate-in fade-in slide-in-from-top-2 duration-300">
-      <div className="bg-gradient-to-br from-orange-50 to-yellow-50 border border-orange-200 rounded-lg shadow-md hover:shadow-lg transition-shadow p-3 min-w-[180px]">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="p-1.5 bg-orange-100 rounded-full">
-            <Award size={16} className="text-orange-600" />
+    <div className="animate-in fade-in slide-in-from-right-2 duration-300">
+      <div className="bg-orange-50/30 border border-orange-100/50 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 p-2 sm:p-2.5">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex flex-col">
+            <span className="text-lg sm:text-xl font-bold text-orange-900 leading-tight">
+              {votesCount}
+            </span>
+            <span className="text-[9px] sm:text-[10px] text-gray-600 font-medium leading-tight">
+              vote{votesCount !== 1 ? 's' : ''}
+            </span>
           </div>
-          <h3 className="text-xs font-semibold text-gray-700">Your Contribution</h3>
+          {votesCount > 0 && (
+            <div className="ml-1">
+              <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-green-600" />
+            </div>
+          )}
         </div>
-        
-        <div className="flex items-baseline gap-2 mt-2">
-          <span className="text-2xl font-bold text-orange-600">
-            {votesCount}
-          </span>
-          <span className="text-xs text-gray-600">
-            detailed vote{votesCount !== 1 ? 's' : ''}
-          </span>
-        </div>
-        
-        {votesCount > 0 && (
-          <div className="flex items-center gap-1 mt-2 text-xs text-green-600">
-            <TrendingUp size={12} />
-            <span>Keep contributing!</span>
-          </div>
-        )}
-        
-        {votesCount === 0 && (
-          <p className="text-xs text-gray-500 mt-2">
-            Submit detailed feedback to start contributing
-          </p>
-        )}
       </div>
     </div>
   );

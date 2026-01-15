@@ -75,9 +75,6 @@ export function TtsLayout() {
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Auth Prompt Banner */}
       <AuthPromptBanner session_type="TTS" />
-      
-      {/* Detailed Votes Card - Only shows in Academic mode for authenticated users */}
-      <DetailedVotesCard />
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
@@ -124,6 +121,8 @@ export function TtsLayout() {
                       <ModelSelector variant="mode" />
                     </div>
                     <div className="flex items-center gap-2 sm:gap-3">
+                      {/* Detailed Votes Card in Mobile Header */}
+                      <DetailedVotesCard />
                       {!isSidebarOpen && (
                         <button
                           onClick={handleNewChat}
@@ -145,6 +144,8 @@ export function TtsLayout() {
                     <div className="min-w-0 flex-1">
                       <ModelSelector />
                     </div>
+                    {/* Detailed Votes Card in Header */}
+                    <DetailedVotesCard />
                   </div>
                 </div>
               </>
