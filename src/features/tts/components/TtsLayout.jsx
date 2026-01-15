@@ -13,6 +13,7 @@ import useDocumentTitle from '../../../shared/hooks/useDocumentTitle';
 import { LeaderboardFilters } from '../../leaderboard/components/LeaderboardFilters';
 import { Grid3x3, FileText } from 'lucide-react';
 import { useTenant } from '../../../shared/context/TenantContext';
+import { DetailedVotesCard } from './DetailedVotesCard';
 
 
 export function TtsLayout() {
@@ -74,6 +75,9 @@ export function TtsLayout() {
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Auth Prompt Banner */}
       <AuthPromptBanner session_type="TTS" />
+      
+      {/* Detailed Votes Card - Only shows in Academic mode for authenticated users */}
+      <DetailedVotesCard />
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
