@@ -557,7 +557,7 @@ export function AsrSidebar({ isOpen, onToggle }) {
                     <ScrollText size={18} />
                     <span className="text-sm">ASR</span>
                   </button>
-                  <button
+{/* <button
                     onClick={() => {
                         if (currentTenant) {
                             navigate(`/${currentTenant}/leaderboard/asr/contributors`);
@@ -570,7 +570,7 @@ export function AsrSidebar({ isOpen, onToggle }) {
                   >
                     <User size={18} />
                     <span className="text-sm">Top Contributors</span>
-                  </button>
+                  </button> */}
                 </div>
               </div>
             </div>
