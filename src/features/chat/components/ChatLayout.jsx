@@ -34,7 +34,7 @@ export function ChatLayout() {
   const filters = [
       { name: 'Overview', suffix: 'overview', icon: Grid3x3 },
       { name: 'Text', suffix: 'text', icon: FileText },
-      { name: 'Top Contributors', suffix: 'contributors', icon: null }, // Or add an icon like Users or Award
+      // { name: 'Top Contributors', suffix: 'contributors', icon: null }, // Or add an icon like Users or Award
   ];
 
   useEffect(() => {

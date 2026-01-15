@@ -765,7 +765,7 @@ export function ChatSidebar({ isOpen, onToggle }) {
                     <ScrollText size={18} />
                     <span className="text-sm">Text</span>
                   </button>
-                  <button
+{/* <button
                     onClick={() => {
                       if (currentTenant) {
                         navigate(`/${currentTenant}/leaderboard/chat/contributors`);
@@ -778,7 +778,7 @@ export function ChatSidebar({ isOpen, onToggle }) {
                   >
                     <User size={18} />
                     <span className="text-sm">Top Contributors</span>
-                  </button>
+                  </button> */}
                   {/* <button 
                         onClick={() => navigate('/leaderboard/webdev')}
                         className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-100 rounded transition text-left w-full"

@@ -26,17 +26,17 @@ export function LeaderboardFeature({ type }) {
        return <LeaderboardOverview sections={sections} />;
     }
 
-    if (category === 'contributors') {
-       return (
-        <TopContributors
-          type={type}
-          defaultLanguage={config.defaultLanguage}
-          defaultOrganization={tenant || config.defaultOrganization}
-          languageOptions={config.languages}
-          organizationOptions={config.organizations}
-        />
-       );
-    }
+// if (category === 'contributors') {
+    //    return (
+    //     <TopContributors
+    //       type={type}
+    //       defaultLanguage={config.defaultLanguage}
+    //       defaultOrganization={tenant || config.defaultOrganization}
+    //       languageOptions={config.languages}
+    //       organizationOptions={config.organizations}
+    //     />
+    //    );
+    // }
 
     // Otherwise show the specific leaderboard
     return (
