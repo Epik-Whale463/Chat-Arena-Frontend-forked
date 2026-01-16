@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { LeaderboardTable } from './LeaderboardTable';
 import { Search, ChevronDown } from 'lucide-react';
-import { API_BASE_URL } from '../../../shared/api/client';
+import { API_BASE_URL, fetchWithAuth } from '../../../shared/api/client';
 
 export function LeaderboardContainer({
   title,
@@ -63,7 +63,7 @@ export function LeaderboardContainer({
 
         const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
         
-        const res = await fetch(fullUrl, {
+        const res = await fetchWithAuth(fullUrl, {
           headers: { accept: 'application/json' },
         });
         

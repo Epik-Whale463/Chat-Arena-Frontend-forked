@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { LeaderboardTable } from './LeaderboardTable';
-import { API_BASE_URL } from '../../../shared/api/client';
+import { API_BASE_URL, fetchWithAuth } from '../../../shared/api/client';
 
 export function LeaderboardOverview({ sections = [] }) {
   const [dataMap, setDataMap] = useState({});
@@ -18,7 +18,7 @@ export function LeaderboardOverview({ sections = [] }) {
           const url = typeof section.fetchEndpoint === 'function' ? section.fetchEndpoint() : section.fetchEndpoint;
           const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
           
-          const res = await fetch(fullUrl, {
+          const res = await fetchWithAuth(fullUrl, {
             headers: { accept: 'application/json' },
           });
           
