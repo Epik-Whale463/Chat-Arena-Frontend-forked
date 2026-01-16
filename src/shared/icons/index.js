@@ -28,6 +28,6 @@ export const ProviderIcons = {
   granite: IbmIcon,
   ai4bharat: AI4Bicon,
   ai4b: AI4Bicon,
-  indicparler: AI4Bicon,
-  elevenlabs: ElevenLabsIcon,
+  indic: AI4Bicon,
+  eleven: ElevenLabsIcon,
 };

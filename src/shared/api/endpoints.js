@@ -9,6 +9,7 @@ export const endpoints = {
       currentUser: '/users/me/',
       updatePreferences: '/users/update_preferences/',
       deleteAccount: '/users/delete_account/',
+      stats: '/users/stats/',
     },
     
     // Model endpoints
