@@ -209,9 +209,117 @@ apiClient.interceptors.response.use(
       }
     }
 
+    // Log frontend errors for failed endpoints (avoid logging auth or logging endpoints)
+    try {
+      const url = originalRequest?.url || '';
+      const skipLogging = [
+        '/auth/',
+        '/public/',
+        '/logs/', // avoid logging the logging endpoint to prevent loops
+      ].some((s) => url.includes(s));
+
+      if (!skipLogging) {
+        // Build a structured log entry
+        const logEntry = {
+          endpoint: url,
+          method: (originalRequest && originalRequest.method) || null,
+          timestamp: new Date().toISOString(),
+          user_email: localStorage.getItem('user_email') || null,
+          status: error.response?.status || null,
+          error_message: error.message || (error.response && error.response.data) || null,
+          request_body: originalRequest?.data ? tryRedact(originalRequest.data) : null,
+          response_body: error.response?.data || null,
+          tenant: getCurrentTenant(),
+          client: {
+            userAgent: navigator.userAgent,
+            appVersion: process.env.REACT_APP_VERSION || null,
+          },
+        };
+
+        // Fire-and-forget; background retry will queue if network/log endpoint fails
+        sendFrontendLog(logEntry);
+      }
+    } catch (logErr) {
+      // swallow logging errors to avoid affecting user flows
+      console.error('Error while attempting to log frontend error', logErr);
+    }
+
     return Promise.reject(error);
   }
 );
+
+// Small helper to redact potentially sensitive fields from request bodies
+function tryRedact(data) {
+  try {
+    const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+    // Redact common sensitive keys
+    const redacted = JSON.parse(JSON.stringify(parsed), (key, value) => {
+      const sensitive = ['password', 'token', 'access_token', 'refresh_token', 'api_key'];
+      if (sensitive.includes(key)) return '[REDACTED]';
+      return value;
+    });
+    return redacted;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Queue for pending logs stored in localStorage
+const PENDING_LOGS_KEY = 'pending_frontend_error_logs';
+
+function enqueuePendingLog(entry) {
+  try {
+    const items = JSON.parse(localStorage.getItem(PENDING_LOGS_KEY) || '[]');
+    items.push(entry);
+    localStorage.setItem(PENDING_LOGS_KEY, JSON.stringify(items));
+  } catch (e) {
+    // ignore
+  }
+}
+
+async function flushPendingLogs() {
+  try {
+    const items = JSON.parse(localStorage.getItem(PENDING_LOGS_KEY) || '[]');
+    if (!items.length) return;
+
+    for (const entry of items.slice()) {
+      try {
+        await sendLogToBackend(entry);
+        // remove first item
+        items.shift();
+      } catch (e) {
+        // stop processing on first failure to avoid tight loops
+        break;
+      }
+    }
+
+    localStorage.setItem(PENDING_LOGS_KEY, JSON.stringify(items));
+  } catch (e) {
+    // ignore
+  }
+}
+
+// Periodically attempt to flush queued logs
+setInterval(() => {
+  flushPendingLogs();
+}, 30000);
+
+// Public: send log entry (tries immediate POST, falls back to queue)
+async function sendFrontendLog(entry) {
+  try {
+    await sendLogToBackend(entry);
+  } catch (e) {
+    enqueuePendingLog(entry);
+  }
+}
+
+// Low-level sender: POSTs to backend logging endpoint using axios (not apiClient)
+async function sendLogToBackend(entry) {
+  // Use simple axios to avoid interceptor cycles
+  const url = `${API_BASE_URL}/logs/frontend-error/`;
+  // Attempt to send with a short timeout
+  await axios.post(url, entry, { timeout: 5000, withCredentials: true });
+}
 
 // Add abort controller support
 export const createAbortController = () => new AbortController();
