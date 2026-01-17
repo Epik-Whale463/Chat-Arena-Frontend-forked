@@ -230,6 +230,7 @@ apiClient.interceptors.response.use(
           request_body: originalRequest?.data ? tryRedact(originalRequest.data) : null,
           response_body: error.response?.data || null,
           tenant: getCurrentTenant(),
+          domain: window.location.hostname,
           client: {
             userAgent: navigator.userAgent,
             appVersion: process.env.REACT_APP_VERSION || null,
