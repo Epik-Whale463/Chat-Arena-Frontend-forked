@@ -62,6 +62,7 @@ export function MessageItem({
   onExpand,
   viewMode = 'single',
   modelName = 'Random',
+  isThinkingModel = false,
   feedbackState = null,
   previewState = null,
   canRegenerate = true,
@@ -200,6 +201,18 @@ export function MessageItem({
 
     return [{ type: 'normal', content: text }];
   }, [message.content, message.isStreaming]);
+
+  useEffect(() => {
+    if (message.isStreaming && !message.content) {
+      console.log('MessageItem Debug:', {
+        modelName,
+        isThinkingModel,
+        isStreaming: message.isStreaming,
+        contentLength: message.content?.length,
+        isThinkingRef: isThinkingModelRef.current
+      });
+    }
+  }, [message.isStreaming, message.content, isThinkingModel, modelName]);
 
   const activeState = feedbackState || previewState;
   const cardClasses = clsx(
@@ -368,7 +381,7 @@ export function MessageItem({
         <div className="prose prose-sm max-w-none text-gray-900">
           {message.isStreaming &&
             (!message.content || message.content.trim().length === 0) &&
-            !isThinkingModelRef.current && ((modelName !== "GPT 5" && modelName !== "GPT 5 Pro" && modelName !== "Gemini 2.5 Pro" && modelName !== "Gemini 3 Pro") ?
+            !isThinkingModelRef.current && (!isThinkingModel ?
               <span className="inline-block w-2 h-4 bg-gray-400 animate-pulse ml-1 rounded-sm" /> :
               <span className="text-xs text-gray-600 font-normal italic animate-pulse">
                 Thinking...

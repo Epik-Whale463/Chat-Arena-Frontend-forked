@@ -163,6 +163,8 @@ export function CompareView({ session, messages, streamingMessages, onRegenerate
                 turn={turn}
                 modelAName={session.model_a?.display_name}
                 modelBName={session.model_b?.display_name}
+                isThinkingModelA={session.model_a?.is_thinking_model}
+                isThinkingModelB={session.model_b?.is_thinking_model}
                 feedbackSelection={turnFeedback}
                 hoverPreview={idx === conversationTurns.length - 1 ? hoverPreview : null}
                 onHoverPreview={setHoverPreview}
