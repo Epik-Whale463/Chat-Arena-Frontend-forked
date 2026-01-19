@@ -202,18 +202,6 @@ export function MessageItem({
     return [{ type: 'normal', content: text }];
   }, [message.content, message.isStreaming]);
 
-  useEffect(() => {
-    if (message.isStreaming && !message.content) {
-      console.log('MessageItem Debug:', {
-        modelName,
-        isThinkingModel,
-        isStreaming: message.isStreaming,
-        contentLength: message.content?.length,
-        isThinkingRef: isThinkingModelRef.current
-      });
-    }
-  }, [message.isStreaming, message.content, isThinkingModel, modelName]);
-
   const activeState = feedbackState || previewState;
   const cardClasses = clsx(
     'rounded-lg bg-white w-full flex flex-col border border-gray-200',
