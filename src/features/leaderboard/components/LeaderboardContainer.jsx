@@ -167,11 +167,7 @@ export function LeaderboardContainer({
               <div className="text-center md:text-left">
                 <div className="text-gray-500 mb-1">Total Votes</div>
                 <div className="text-gray-900 text-sm font-mono text-center">
-                    {data.reduce((sum, row) => {
-                        const val = row.votes;                        
-                        const num = typeof val === 'string' ? Number(val.replace(/,/g, '')) : Number(val);
-                        return sum + (isNaN(num) ? 0 : num);
-                    }, 0)}
+                    -
                 </div>
               </div>
               <div className="text-center md:text-left">
