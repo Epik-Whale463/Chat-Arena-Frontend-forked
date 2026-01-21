@@ -63,9 +63,13 @@ export function LeaderboardFeature({ type }) {
             <h1 className="text-2xl md:text-3xl font-bold mb-2">
               {config.title} Leaderboard
             </h1>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 mb-4">
               Compare models based on their performance metrics
             </p>
+            <div className="flex items-center gap-2 mb-6 text-xs">
+              <span className="text-gray-600">Human judgments powered by</span>
+              <img src="/josh-logo.svg" alt="JoshTalks" className="h-8" />
+            </div>
           </>
         )}
 

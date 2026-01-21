@@ -71,22 +71,43 @@ export function LeaderboardContainer({
         
         const jsonData = await res.json();
         
-        let mapped;
-        if (dataMapper) {
-             mapped = dataMapper(jsonData);
-        } else {
-            mapped = (Array.isArray(jsonData) ? jsonData : [])
-            .map(item => ({
-                ...item,
-                id: item.model || Math.random().toString(36).substr(2, 9),
-                display_name: item.model,
-                organization: item.organization || 'Unknown',
-                language: item.language || 'en',
-            }));
-        }
-
         if (alive) {
-            setData(mapped);
+            if (Array.isArray(jsonData)) {
+                const mapped = dataMapper ? dataMapper(jsonData) : jsonData.map(item => ({
+                   ...item,
+                   id: item.model || Math.random().toString(36).substr(2, 9),
+                   display_name: item.model,
+                   organization: item.organization || 'Unknown',
+                   language: item.language || 'en',
+                }));
+                setData(mapped);
+            } else if (typeof jsonData === 'object' && jsonData !== null) {
+                let rawData = jsonData[selectedLanguage];
+
+                if (!rawData) {
+                    if (jsonData['Overall']) {
+                        rawData = jsonData['Overall'];
+                    } else {
+                        const firstKey = Object.keys(jsonData)[0];
+                        if (firstKey) {
+                            rawData = jsonData[firstKey];
+                        }
+                    }
+                }
+                
+                rawData = rawData || [];
+                
+                const mapped = dataMapper ? dataMapper(rawData) : rawData.map(item => ({
+                   ...item,
+                   id: item.model || Math.random().toString(36).substr(2, 9),
+                   display_name: item.model,
+                   organization: item.organization || 'Unknown',
+                   language: item.language || 'en',
+                }));
+                setData(mapped);
+            } else {
+                setData([]);
+            }
             setLoading(false);
         }
       } catch (e) {
@@ -132,6 +153,10 @@ export function LeaderboardContainer({
               <p className="text-gray-600 text-xs max-w-lg md:text-sm">
                 {description}
               </p>
+              <div className="flex items-center gap-2 mt-2 text-xs">
+                <span className="text-gray-600">Human judgments powered by</span>
+                <img src="/josh-logo.svg" alt="JoshTalks" className="h-8" />
+              </div>
             </div>
 
             <div className="flex flex-row md:flex-row gap-6 md:gap-8 text-sm md:text-base">
@@ -142,7 +167,11 @@ export function LeaderboardContainer({
               <div className="text-center md:text-left">
                 <div className="text-gray-500 mb-1">Total Votes</div>
                 <div className="text-gray-900 text-sm font-mono text-center">
-                    {data.reduce((sum, row) => sum + (Number(row.votes) || 0), 0)}
+                    {data.reduce((sum, row) => {
+                        const val = row.votes;                        
+                        const num = typeof val === 'string' ? Number(val.replace(/,/g, '')) : Number(val);
+                        return sum + (isNaN(num) ? 0 : num);
+                    }, 0)}
                 </div>
               </div>
               <div className="text-center md:text-left">
@@ -152,11 +181,7 @@ export function LeaderboardContainer({
             </div>
           </div>
 
-          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-yellow-800 text-sm font-medium">
-              We will update the leaderboard once a sufficient number of votes are received for each model.
-            </p>
-          </div>
+
 
           <div className="flex flex-col lg:flex-row gap-3 mb-4">
              {/* Organization Dropdown Removed */}
@@ -236,14 +261,25 @@ export function LeaderboardContainer({
           </div>
         </div>
 
-        {/* Table */}
-        <LeaderboardTable
-          data={filteredData}
-          columns={columns}
-          compact={false}
-          loading={loading}
-          emptyMessage={searchQuery ? "No models found matching your search" : "No models available"}
-        />
+        {/* Table or Coming Soon Message */}
+        {selectedLanguage === 'Overall' ? (
+          <LeaderboardTable
+            data={filteredData}
+            columns={columns}
+            compact={false}
+            loading={loading}
+            emptyMessage={searchQuery ? "No models found matching your search" : "No models available"}
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 bg-white rounded-lg border border-gray-200">
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              Leaderboard will be updated soon
+            </h3>
+            <p className="text-gray-500">
+              We are working on bringing you the rankings for {selectedLanguageOption?.label || selectedLanguage}.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

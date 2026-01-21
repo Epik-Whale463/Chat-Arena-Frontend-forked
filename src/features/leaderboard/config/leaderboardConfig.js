@@ -56,7 +56,7 @@ const globalLanguages = [
   { value: 'th', label: 'Thai', icon: '🇹🇭' },
 ];
 
-export const allLanguages = [...indianLanguages, ...globalLanguages];
+export const allLanguages = [{ value: 'Overall', label: 'Overall', icon: '🌐' }, ...indianLanguages, ...globalLanguages];
 
 // Organization Options
 export const organizationOptions = [
@@ -89,7 +89,7 @@ export const leaderboardConfig = {
     title: 'ASR Arena',
     description: 'View rankings across various ASR models on their versatility, linguistic precision, and cultural context.',
     type: 'asr',
-    defaultLanguage: 'en',
+    defaultLanguage: 'Overall',
     defaultOrganization: 'ai4b',
     languages: allLanguages,
     organizations: organizationOptions,
@@ -110,7 +110,7 @@ export const leaderboardConfig = {
     title: 'Text Arena',
     description: 'View rankings across various LLMs on their versatility, linguistic precision, and cultural context across text.',
     type: 'llm',
-    defaultLanguage: 'en',
+    defaultLanguage: 'Overall',
     defaultOrganization: 'ai4b',
     languages: allLanguages,
     organizations: organizationOptions,
@@ -131,7 +131,7 @@ export const leaderboardConfig = {
     title: 'TTS Arena',
     description: 'View rankings across various TTS models.',
     type: 'tts',
-    defaultLanguage: 'en',
+    defaultLanguage: 'Overall',
     defaultOrganization: 'ai4b',
     languages: allLanguages, // Or specific TTS languages if different
     organizations: organizationOptions,
