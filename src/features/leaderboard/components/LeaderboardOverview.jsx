@@ -33,7 +33,7 @@ export function LeaderboardOverview({ sections = [] }) {
                  mapped = (Array.isArray(jsonData) ? jsonData : [])
                   .map((item, idx) => ({
                     ...item,
-                    rank: idx + 1, 
+                    rank: item.rank || idx + 1, 
                     id: item.model || item.id,
                     display_name: item.model || item.display_name,
                     model: item.model || item.display_name,
@@ -72,14 +72,11 @@ export function LeaderboardOverview({ sections = [] }) {
   return (
     <div className="p-4 md:p-6 max-w-7xl mx-auto">
       {/* Notice Banner */}
-      <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <p className="text-yellow-800 text-sm font-medium">
-            We will update the leaderboard once a sufficient number of votes are received for each model.
-        </p>
-      </div>
+
 
       <div className="space-y-8">
         {sections.map((section) => {
+          
           const Icon = section.icon;
           const data = dataMap[section.id] || [];
           const isLoading = loadingMap[section.id];
