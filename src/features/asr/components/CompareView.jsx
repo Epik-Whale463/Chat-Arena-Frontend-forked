@@ -110,6 +110,8 @@ export function CompareView({ session, messages, streamingMessages, onRegenerate
     lastTurn &&
     lastTurn.modelAMessage &&
     lastTurn.modelBMessage &&
+    lastTurn.modelAMessage.content &&
+    lastTurn.modelBMessage.content &&
     !lastTurn.modelAMessage.isStreaming &&
     !lastTurn.modelBMessage.isStreaming &&
     !lastTurn.userMessage.feedback;

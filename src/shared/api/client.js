@@ -325,6 +325,81 @@ async function sendLogToBackend(entry) {
 // Add abort controller support
 export const createAbortController = () => new AbortController();
 
+// Helper to get current auth headers for fetch requests
+export const getAuthHeaders = () => {
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+
+  const accessToken = localStorage.getItem('access_token');
+  if (accessToken) {
+    headers['Authorization'] = `Bearer ${accessToken}`;
+  } else {
+    const anonymousToken = localStorage.getItem('anonymous_token');
+    if (anonymousToken) {
+      headers['X-Anonymous-Token'] = anonymousToken;
+    }
+  }
+
+  return headers;
+};
+
+// Helper to refresh access token (for use outside axios)
+const refreshAccessToken = async () => {
+  const refreshToken = localStorage.getItem('refresh_token');
+  if (!refreshToken) {
+    throw new Error('No refresh token available');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/auth/refresh/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ refresh: refreshToken }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Token refresh failed');
+  }
+
+  const data = await response.json();
+  if (data.access) {
+    localStorage.setItem('access_token', data.access);
+  }
+  return data;
+};
+
+// Fetch wrapper with automatic token refresh on 401
+// Use this for streaming endpoints or any fetch() calls that need auth
+export const fetchWithAuth = async (url, options = {}) => {
+  // Add auth headers if not already present
+  const headers = {
+    ...getAuthHeaders(),
+    ...options.headers,
+  };
+
+  let response = await fetch(url, { ...options, headers });
+
+  // Handle 401 by refreshing token and retrying once
+  if (response.status === 401) {
+    try {
+      await refreshAccessToken();
+      // Retry with new token
+      const newHeaders = {
+        ...getAuthHeaders(),
+        ...options.headers,
+      };
+      response = await fetch(url, { ...options, headers: newHeaders });
+    } catch (refreshError) {
+      console.error('Token refresh failed:', refreshError);
+      userService.clearTokens();
+      onLogoutCallback?.();
+      throw new Error('Session expired. Please sign in again.');
+    }
+  }
+
+  return response;
+};
+
 // WebSocket connection helper with better error handling
 export const createWebSocketConnection = (path, options = {}) => {
   const token = localStorage.getItem('access_token');
