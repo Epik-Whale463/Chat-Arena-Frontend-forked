@@ -31,6 +31,20 @@ export const commonColumns = {
       </a>
     )
   },
+  modelNoLink: { 
+    key: 'model', 
+    label: 'Model', 
+    sortable: true, 
+    className: 'font-mono',
+    render: (val, row) => (
+      <div className="group flex items-center gap-2 w-fit">
+        <ModelIcon organization={row.organization || row.provider} />
+        <span>
+          {val}
+        </span>
+      </div>
+    )
+  },
   score: { key: 'score', label: 'Score', sortable: true, align: 'right' },
   ci: { key: 'ci', label: '95% CI (±)', sortable: true, align: 'right' },
   votes: { key: 'votes', label: 'Votes', sortable: true, align: 'right' },
@@ -41,6 +55,16 @@ export const commonColumns = {
 export const leaderboardColumns = [
   commonColumns.rank,
   commonColumns.model,
+  commonColumns.score,
+  commonColumns.ci,
+  commonColumns.votes,
+  commonColumns.organization,
+  commonColumns.license,
+];
+
+export const leaderboardColumnsNoLink = [
+  commonColumns.rank,
+  commonColumns.modelNoLink,
   commonColumns.score,
   commonColumns.ci,
   commonColumns.votes,
@@ -102,7 +126,8 @@ export const leaderboardConfig = {
     defaultOrganization: 'ai4b',
     languages: allLanguages,
     organizations: organizationOptions,
-    columns: leaderboardColumns,
+    organizations: organizationOptions,
+    columns: leaderboardColumnsNoLink,
     fetchEndpoint: (params) => endpoints.models.leaderboard('asr', params?.organization),
     getOverviewSections: (tenant) => [
       {
@@ -111,7 +136,7 @@ export const leaderboardConfig = {
         icon: Mic,
         fetchEndpoint: endpoints.models.leaderboard('asr'),
         viewAllLink: tenant ? `/${tenant}/leaderboard/asr` : '/leaderboard/asr',
-        columns: leaderboardColumns,
+        columns: leaderboardColumnsNoLink,
       }
     ]
   },
@@ -144,7 +169,7 @@ export const leaderboardConfig = {
     defaultOrganization: 'ai4b',
     languages: allLanguages, // Or specific TTS languages if different
     organizations: organizationOptions,
-    columns: leaderboardColumns,
+    columns: leaderboardColumnsNoLink,
     fetchEndpoint: (params) => endpoints.models.leaderboard('tts', params?.organization),
     getOverviewSections: (tenant) => [
       {
@@ -153,7 +178,7 @@ export const leaderboardConfig = {
         icon: FileText,
         fetchEndpoint: (params) => endpoints.models.leaderboard('tts', params?.organization || tenant || 'ai4b'),
         viewAllLink: tenant ? `/${tenant}/leaderboard/tts/tts` : '/leaderboard/tts/tts',
-        columns: leaderboardColumns,
+        columns: leaderboardColumnsNoLink,
       }
     ]
   }
