@@ -19,6 +19,9 @@ import {
   Edit2,
   Ellipsis,
   GraduationCap,
+  Mic,
+  Volume2,
+  ChevronDown,
 } from 'lucide-react';
 import { AuthModal } from '../../auth/components/AuthModal';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -386,6 +389,15 @@ export function TtsSidebar({ isOpen, onToggle }) {
 
   const [renameModalOpen, setRenameModalOpen] = useState(false);
   const [sessionToRename, setSessionToRename] = useState(null);
+  const [isArenaSwitcherOpen, setIsArenaSwitcherOpen] = useState(false);
+
+  const arenaOptions = [
+    { key: 'LLM', name: 'LLM Arena', icon: MessageSquare, url: '/chat' },
+    { key: 'ASR', name: 'ASR Arena', icon: Mic, url: '/asr' },
+    { key: 'TTS', name: 'TTS Arena', icon: Volume2, url: '/tts' },
+  ];
+
+  const currentArena = arenaOptions.find(a => a.key === 'TTS');
 
   const groupedSessions = useMemo(() => groupSessionsByDate(sessions), [sessions]);
 
@@ -497,9 +509,44 @@ export function TtsSidebar({ isOpen, onToggle }) {
           <div className="flex items-center h-[65px] px-3 sm:px-4 border-b border-gray-200">
             {isOpen ? (
               <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-2 overflow-hidden min-w-0">
-                  <BotMessageSquare className="text-orange-500 flex-shrink-0" size={20} />
-                  <span className="font-bold text-base sm:text-lg whitespace-nowrap truncate">Indic TTS Arena</span>
+                <div
+                  className="relative group/arena"
+                  onMouseEnter={() => setIsArenaSwitcherOpen(true)}
+                  onMouseLeave={() => setIsArenaSwitcherOpen(false)}
+                >
+                  <button className="flex items-center gap-2 overflow-hidden min-w-0 hover:bg-gray-100 rounded-lg px-2 py-1.5 transition-colors">
+                    <BotMessageSquare className="text-orange-500 flex-shrink-0" size={20} />
+                    <span className="font-bold text-base sm:text-lg whitespace-nowrap truncate">
+                      Indic {currentArena.name}
+                    </span>
+                    <ChevronDown size={16} className={`text-gray-500 transition-transform ${isArenaSwitcherOpen ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {isArenaSwitcherOpen && (
+                    <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-xl border border-gray-100 py-1 z-50">
+                      {arenaOptions.map((arena) => {
+                        const Icon = arena.icon;
+                        const isActive = arena.key === 'TTS';
+                        return (
+                          <button
+                            key={arena.key}
+                            onClick={() => {
+                              if (currentTenant) {
+                                navigate(`/${currentTenant}${arena.url}`);
+                              } else {
+                                navigate(arena.url);
+                              }
+                              setIsArenaSwitcherOpen(false);
+                            }}
+                            className={`w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 flex items-center gap-3 ${isActive ? 'bg-orange-50 text-orange-700' : 'text-gray-700'}`}
+                          >
+                            <Icon size={18} className={isActive ? 'text-orange-500' : 'text-gray-500'} />
+                            <span>Indic {arena.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
                 <button onClick={onToggle} className="p-1.5 rounded-lg hover:bg-gray-100 flex-shrink-0">
                   <PanelLeftClose size={18} />
@@ -565,7 +612,7 @@ export function TtsSidebar({ isOpen, onToggle }) {
                     <ScrollText size={18} />
                     <span className="text-sm">TTS</span>
                   </button>
-                  <button
+{/* <button
                     onClick={() => {
                         if (currentTenant) {
                             navigate(`/${currentTenant}/leaderboard/tts/contributors`);
@@ -578,7 +625,7 @@ export function TtsSidebar({ isOpen, onToggle }) {
                   >
                     <User size={18} />
                     <span className="text-sm">Top Contributors</span>
-                  </button>
+                  </button> */}
                 </div>
               </div>
             </div>

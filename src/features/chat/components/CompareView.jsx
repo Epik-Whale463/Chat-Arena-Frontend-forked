@@ -110,6 +110,8 @@ export function CompareView({ session, messages, streamingMessages, onRegenerate
     lastTurn &&
     lastTurn.modelAMessage &&
     lastTurn.modelBMessage &&
+    lastTurn.modelAMessage.content &&
+    lastTurn.modelBMessage.content &&
     !lastTurn.modelAMessage.isStreaming &&
     !lastTurn.modelBMessage.isStreaming &&
     !lastTurn.userMessage.feedback;
@@ -156,15 +158,26 @@ export function CompareView({ session, messages, streamingMessages, onRegenerate
       <div ref={mainScrollRef} onScroll={handleMainScroll} className="flex-1 overflow-y-auto p-2 sm:p-4 max-h-full">
         <div className={`${(!isSidebarOpen && window.innerWidth >= 768) ? 'max-w-full mx-12' : 'max-w-7xl mx-auto'} space-y-3 sm:space-y-5 pb-6`}>
           {conversationTurns.map((turn, idx) => {
-            const turnFeedback = turn.userMessage.feedback;
+            // If turn has feedback, use it; otherwise find next turn with feedback
+            let turnFeedback = turn.userMessage.feedback;
+            if (!turnFeedback) {
+              for (let j = idx + 1; j < conversationTurns.length; j++) {
+                if (conversationTurns[j].userMessage.feedback) {
+                  turnFeedback = conversationTurns[j].userMessage.feedback;
+                  break;
+                }
+              }
+            }
             return (
               <ConversationTurn
                 key={turn.userMessage?.id}
                 turn={turn}
                 modelAName={session.model_a?.display_name}
                 modelBName={session.model_b?.display_name}
+                isThinkingModelA={session.model_a?.is_thinking_model}
+                isThinkingModelB={session.model_b?.is_thinking_model}
                 feedbackSelection={turnFeedback}
-                hoverPreview={idx === conversationTurns.length - 1 ? hoverPreview : null}
+                hoverPreview={hoverPreview}
                 onHoverPreview={setHoverPreview}
                 onExpand={handleExpand}
                 onRegenerate={onRegenerate}

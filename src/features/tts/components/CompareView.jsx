@@ -32,6 +32,12 @@ export function CompareView({ session, messages, streamingMessages, onRegenerate
     feedbackStateRef.current = feedbackState;
   }, [feedbackState]);
 
+  useEffect(() => {
+    const lastUserMessage = [...messages].reverse().find(msg => msg.role === 'user');
+    const hasExistingDetailedFeedback = lastUserMessage?.has_detailed_feedback || false;
+    setDetailedFeedbackSubmitted(hasExistingDetailedFeedback);
+  }, [session?.id, messages]);
+
   const handleExpand = (message) => {
     setExpandedMessage(message);
   };
@@ -101,6 +107,9 @@ export function CompareView({ session, messages, streamingMessages, onRegenerate
       if (response.status >= 200 && response.status < 300) {
         setDetailedFeedbackSubmitted(true);
         toast.success('Detailed feedback submitted successfully');
+        if (response.data && response.data.session_update) {
+          dispatch(updateActiveSessionData(response.data.session_update));
+        }
         if (onDetailedFeedbackStatusChange) {
           onDetailedFeedbackStatusChange(true);
         }

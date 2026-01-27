@@ -138,7 +138,7 @@ const ComparisonButtons = ({ label, description, value, onChange, modelAName, mo
         <label className="text-sm font-medium text-gray-700">{label}</label>
         <p className="text-xs text-gray-500 mt-0.5">{description}</p>
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-2">
         {options.map((option) => {
           const isSelected = value === option.key;
           return (

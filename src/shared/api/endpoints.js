@@ -3,11 +3,13 @@ export const endpoints = {
     // Auth endpoints
     auth: {
       google: '/auth/google/',
+      phone: '/auth/phone/',
       anonymous: '/auth/anonymous/',
       refresh: '/auth/refresh/',
       currentUser: '/users/me/',
       updatePreferences: '/users/update_preferences/',
       deleteAccount: '/users/delete_account/',
+      stats: '/users/stats/',
     },
     
     // Model endpoints

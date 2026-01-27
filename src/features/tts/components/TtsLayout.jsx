@@ -14,6 +14,7 @@ import { LeaderboardFilters } from '../../leaderboard/components/LeaderboardFilt
 import { Grid3x3, FileText } from 'lucide-react';
 import { useTenant } from '../../../shared/context/TenantContext';
 import { Walkthrough } from './Walkthrough';
+import { DetailedVotesCard } from './DetailedVotesCard';
 
 
 export function TtsLayout() {
@@ -32,7 +33,7 @@ export function TtsLayout() {
   const filters = [
     { name: 'Overview', suffix: 'overview', icon: Grid3x3 },
     { name: 'TTS', suffix: 'tts', icon: FileText },
-    { name: 'Top Contributors', suffix: 'contributors', icon: null },
+    // { name: 'Top Contributors', suffix: 'contributors', icon: null },
   ];
 
   useEffect(() => {
@@ -124,6 +125,8 @@ export function TtsLayout() {
                       <ModelSelector variant="mode" />
                     </div>
                     <div className="flex items-center gap-2 sm:gap-3">
+                      {/* Detailed Votes Card in Mobile Header */}
+                      <DetailedVotesCard />
                       {!isSidebarOpen && (
                         <button
                           onClick={handleNewChat}
@@ -145,6 +148,8 @@ export function TtsLayout() {
                     <div className="min-w-0 flex-1">
                       <ModelSelector />
                     </div>
+                    {/* Detailed Votes Card in Header */}
+                    <DetailedVotesCard />
                   </div>
                 </div>
               </>

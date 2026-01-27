@@ -7,6 +7,7 @@ import LlamaIcon from "./LlamaIcon";
 import OpenAiIcon from "./OpenAiIcon";
 import QwenIcon from "./QwenIcon";
 import SarvamIcon from "./SarvamIcon";
+import ElevenLabsIcon from "./ElevenLabsIcon";
 
 
 export const ProviderIcons = {
@@ -27,4 +28,6 @@ export const ProviderIcons = {
   granite: IbmIcon,
   ai4bharat: AI4Bicon,
   ai4b: AI4Bicon,
+  indic: AI4Bicon,
+  eleven: ElevenLabsIcon,
 };
